@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import './App.css';
+import './App.scss';
 import Navbar from './components/Navbar/Navbar';
 import Banner from './components/Banner/Banner';
-
+import Homepage from './features/Home/Homepage';
 interface Forecast {
     date: string;
     temperatureC: number;
@@ -45,6 +45,14 @@ function App() {
             <h1 id="tabelLabel">Weather forecast</h1>
             <p>This component demonstrates fetching data from the server.</p>
             {contents}
+            {/* Render the Navbar component here if needed */}
+            <Navbar />
+
+            {/* Render the Banner component here if needed */}
+            <Banner />
+
+            {/* Render the Homepage component */}
+            <Homepage />
         </div>
     );
 
