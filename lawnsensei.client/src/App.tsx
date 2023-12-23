@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
+import Navbar from './components/Navbar/Navbar';
+import Banner from './components/Banner/Banner';
 
 interface Forecast {
     date: string;
