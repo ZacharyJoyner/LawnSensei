@@ -1,5 +1,8 @@
 ﻿import React from 'react';
 import './Homepage.scss'; // Import SCSS file
+// Check if the path to the image is correct
+import bannerImage from '../../../assets/images/banner1.png';
+ // Import banner image
 
 function Homepage() {
     return (
@@ -27,7 +30,7 @@ function Homepage() {
             </nav>
 
             {/* Rotating Marketing Banner */}
-            <div className="banner">
+            <div className="banner" style={{ backgroundImage: `url(${bannerImage})` }}>
                 <div className="banner-content">
                     <h1>Your Lawn, Your Zen</h1>
                     <p>Discover the Art of Lawn Care with Lawn Sensei</p>

@@ -1,8 +1,17 @@
 ﻿/* Basic styles for Navbar */
+@mixin transition($property, $duration, $timing-function) {
+    transition: $property $duration $timing-function;
+}
+
+$nav-bg-color: #333;
+$nav-text-color: #fff;
+$nav-padding: 10px 0;
+$nav-link-hover-color: #007bff;
+
 nav {
-    background-color: #333;
-    color: #fff;
-    padding: 10px 0;
+    background-color: $nav-bg-color;
+    color: $nav-text-color;
+    padding: $nav-padding;
 
     ul {
         list-style: none;
@@ -14,12 +23,12 @@ nav {
 
             a {
                 text-decoration: none;
-                color: #fff;
+                color: $nav-text-color;
                 font-weight: bold;
-                transition: color 0.3s ease-in-out;
+                @include transition(color, 0.3s, ease-in-out);
 
                 &:hover {
-                    color: #007bff; /* Change color on hover */
+                    color: $nav-link-hover-color;
                 }
             }
         }
@@ -28,7 +37,7 @@ nav {
 
 /* Styles for Banner */
 .banner {
-    background-image: url('your-image.jpg'); /* Replace with your banner image URL */
+    background-image: url('./assets/images/banner1.png'); // Make sure path is correct
     background-size: cover;
     background-position: center;
     text-align: center;
