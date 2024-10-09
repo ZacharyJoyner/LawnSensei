@@ -1,57 +1,80 @@
-﻿// OnboardingStep1.tsx
-import React, { useState } from 'react';
-import { getUserLocation, getAddressFromCoordinates, getClimateZone } from '../services/locationService';
+﻿// OnboardingSummary.tsx
+import React from 'react';
+import { Typography, Card, CardContent, Grid, Button, Container } from '@mui/material';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-const OnboardingStep1: React.FC = () => {
-    const [address, setAddress] = useState<string>('');
-    const [climateZone, setClimateZone] = useState<string>('');
+interface OnboardingSummaryProps {
+    lawnSize: string;
+    address: string;
+    grassType: string;
+    climateZone: string;
+}
 
-    const handleUseMyLocation = async () => {
+const OnboardingSummary: React.FC<OnboardingSummaryProps> = ({ lawnSize, address, grassType, climateZone }) => {
+    const navigate = useNavigate();
+
+    const handleFinish = async () => {
         try {
-            // Get user's geolocation
-            const { latitude, longitude } = await getUserLocation();
+            const onboardingData = {
+                lawnSize,
+                address,
+                grassType,
+                climateZone,
+            };
 
-            // Get the address from coordinates
-            const userAddress = await getAddressFromCoordinates(latitude, longitude);
-            setAddress(userAddress);
-
-            // Determine the climate zone based on latitude
-            const zone = getClimateZone(latitude);
-            setClimateZone(zone);
+            // Make a POST request to save onboarding data
+            const response = await axios.post('/api/OnboardingData', onboardingData);
+            if (response.status === 201) {
+                alert('Onboarding Complete! Your data has been saved.');
+                navigate('/dashboard');
+            }
         } catch (error) {
-            alert(error);
+            console.error('Error saving onboarding data:', error);
+            alert('There was an error saving your data. Please try again.');
         }
     };
 
     return (
-        <div>
-            <h2>Step 1: Lawn Details</h2>
-            <button onClick={handleUseMyLocation}>Use My Location</button>
-            <div>
-                <label>
-                    Address:
-                    <input
-                        type="text"
-                        value={address}
-                        onChange={(e) => setAddress(e.target.value)}
-                        placeholder="Enter your address"
-                    />
-                </label>
-            </div>
-            <div>
-                <label>
-                    Climate Zone:
-                    <input
-                        type="text"
-                        value={climateZone}
-                        readOnly
-                        placeholder="Detected Climate Zone"
-                    />
-                </label>
-            </div>
-            {/* Add more inputs as needed for lawn size, etc. */}
-        </div>
+        <Container maxWidth="sm">
+            <Card variant="outlined" style={{ marginTop: '20px' }}>
+                <CardContent>
+                    <Typography variant="h5" gutterBottom>
+                        Onboarding Summary
+                    </Typography>
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <Typography variant="body1">
+                                <strong>Address:</strong> {address}
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="body1">
+                                <strong>Climate Zone:</strong> {climateZone}
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="body1">
+                                <strong>Lawn Size:</strong> {lawnSize} sq ft
+                            </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                            <Typography variant="body1">
+                                <strong>Grass Type:</strong> {grassType}
+                            </Typography>
+                        </Grid>
+                    </Grid>
+                </CardContent>
+            </Card>
+            <Grid container spacing={2} justifyContent="center" style={{ marginTop: '20px' }}>
+                <Grid item>
+                    <Button variant="contained" color="primary" onClick={handleFinish}>
+                        Finish
+                    </Button>
+                </Grid>
+            </Grid>
+        </Container>
     );
 };
 
-export default OnboardingStep1;
+export default OnboardingSummary;
