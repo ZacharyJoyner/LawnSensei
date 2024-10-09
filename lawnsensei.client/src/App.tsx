@@ -1,30 +1,41 @@
+// App.tsx
 import React from 'react';
-import './App.scss';
-import Navbar from './components/Navbar/NavBar';
-import Banner from './components/Banner/Banner';
-import Homepage from './features/Home/Homepage';
-import WeatherForecast from './features/WeatherForecast/WeatherForecast';
-import Register from './components/Register/Register';
-import Login from './components/Login/Login';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Login from './components/auth/Login';
+import Register from './components/auth/Register';
+import Dashboard from './components/features/Dashboard';
+import OnboardingStep1 from './components/onboarding/OnboardingStep1';
+import OnboardingStep2 from './components/onboarding/OnboardingStep2';
+import OnboardingSummary from './components/onboarding/OnboardingSummary';
+import PrivateRoute from './components/common/PrivateRoute';
+import Logout from './components/auth/Logout';
+import LawnCarePlanGenerator from './components/features/LawnCarePlanGenerator';
 
-function App() {
-    return (
-        <div className="App">
-            <Navbar />
-            <Banner />
-            <WeatherForecast /> {/* Now the Weather Forecast is its own component */}
-            <Homepage />
-            {/* Other components like Footer can be added here */}
-        </div>
-    );
-}
 const App: React.FC = () => {
     return (
-        <div>
-            <h1>Welcome to LawnSensei</h1>
-            <Register />
-            <Login />
-        </div>
+        <Router>
+            <div>
+                <h1>Welcome to LawnSensei</h1>
+                <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Register />} />
+                    <Route path="/logout" element={<Logout />} />
+                    <Route path="/onboarding/step1" element={<OnboardingStep1 />} />
+                    <Route path="/onboarding/step2" element={<OnboardingStep2 />} />
+                    <Route path="/onboarding/summary" element={<OnboardingSummary lawnSize="" address="" grassType="" climateZone="" />} />
+                    <Route path="/lawn-care-plan" element={<LawnCarePlanGenerator lawnSize="" grassType="" climateZone="" />} />
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <PrivateRoute>
+                                <Dashboard />
+                            </PrivateRoute>
+                        }
+                    />
+                </Routes>
+            </div>
+        </Router>
     );
 };
-export default App;
+
+export default App
