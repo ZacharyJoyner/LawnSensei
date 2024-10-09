@@ -4,6 +4,8 @@ import Navbar from './components/Navbar/NavBar';
 import Banner from './components/Banner/Banner';
 import Homepage from './features/Home/Homepage';
 import WeatherForecast from './features/WeatherForecast/WeatherForecast';
+import Register from './components/Register/Register';
+import Login from './components/Login/Login';
 
 function App() {
     return (
@@ -16,5 +18,13 @@ function App() {
         </div>
     );
 }
-
+const App: React.FC = () => {
+    return (
+        <div>
+            <h1>Welcome to LawnSensei</h1>
+            <Register />
+            <Login />
+        </div>
+    );
+};
 export default App;
