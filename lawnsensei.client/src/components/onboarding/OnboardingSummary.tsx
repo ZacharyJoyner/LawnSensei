@@ -1,5 +1,4 @@
-﻿// OnboardingSummary.tsx
-import React from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Typography, Card, CardContent, Grid, Button, Container } from '@mui/material';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -11,29 +10,32 @@ interface OnboardingSummaryProps {
     climateZone: string;
 }
 
-const OnboardingSummary: React.FC<OnboardingSummaryProps> = ({ lawnSize, address, grassType, climateZone }) => {
+const OnboardingSummary: React.FC = () => {
+    const [summaryData, setSummaryData] = useState<OnboardingSummaryProps | null>(null);
     const navigate = useNavigate();
 
-    const handleFinish = async () => {
-        try {
-            const onboardingData = {
-                lawnSize,
-                address,
-                grassType,
-                climateZone,
-            };
-
-            // Make a POST request to save onboarding data
-            const response = await axios.post('/api/OnboardingData', onboardingData);
-            if (response.status === 201) {
-                alert('Onboarding Complete! Your data has been saved.');
-                navigate('/dashboard');
+    useEffect(() => {
+        const fetchOnboardingData = async () => {
+            try {
+                const response = await axios.get('/api/OnboardingData');
+                setSummaryData(response.data);
+            } catch (error) {
+                console.error('Error fetching onboarding data:', error);
+                alert('There was an error fetching your onboarding data. Please try again.');
             }
-        } catch (error) {
-            console.error('Error saving onboarding data:', error);
-            alert('There was an error saving your data. Please try again.');
-        }
+        };
+
+        fetchOnboardingData();
+    }, []);
+
+    const handleFinish = () => {
+        alert('Onboarding Complete! Your data has been saved.');
+        navigate('/dashboard');
     };
+
+    if (!summaryData) {
+        return <Typography>Loading...</Typography>;
+    }
 
     return (
         <Container maxWidth="sm">
@@ -45,22 +47,22 @@ const OnboardingSummary: React.FC<OnboardingSummaryProps> = ({ lawnSize, address
                     <Grid container spacing={2}>
                         <Grid item xs={12}>
                             <Typography variant="body1">
-                                <strong>Address:</strong> {address}
+                                <strong>Address:</strong> {summaryData.address}
                             </Typography>
                         </Grid>
                         <Grid item xs={12}>
                             <Typography variant="body1">
-                                <strong>Climate Zone:</strong> {climateZone}
+                                <strong>Climate Zone:</strong> {summaryData.climateZone}
                             </Typography>
                         </Grid>
                         <Grid item xs={12}>
                             <Typography variant="body1">
-                                <strong>Lawn Size:</strong> {lawnSize} sq ft
+                                <strong>Lawn Size:</strong> {summaryData.lawnSize} sq ft
                             </Typography>
                         </Grid>
                         <Grid item xs={12}>
                             <Typography variant="body1">
-                                <strong>Grass Type:</strong> {grassType}
+                                <strong>Grass Type:</strong> {summaryData.grassType}
                             </Typography>
                         </Grid>
                     </Grid>
