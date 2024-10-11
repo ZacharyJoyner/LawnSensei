@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\.github",
+    "\\.github\\workflows",
+    "\\lawnsensei.client",
+    "\\lawnsensei.Server",
+    "\\lawnsensei.Server\\Data",
+    "\\lawnsensei.Server\\firebase",
+    "\\lawnsensei.Server\\Migrations",
+    "\\lawnsensei.Server\\Models",
+    "\\lawnsensei.Server\\Properties"
+  ],
+  "SelectedNode": "\\.env",
+  "PreviewInSolutionExplorer": false
+}

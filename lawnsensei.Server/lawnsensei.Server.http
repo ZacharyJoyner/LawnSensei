@@ -1,6 +1,0 @@
-@lawnsensei.Server_HostAddress = http://localhost:5088
-
-GET {{lawnsensei.Server_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
