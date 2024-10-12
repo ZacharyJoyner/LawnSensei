@@ -1,0 +1,88 @@
+/* HeroSection.css */
+
+.hero-section {
+    position: relative;
+    height: 100vh; /* Change to 100% viewport height to eliminate white space */
+    background: url('../assets/Lawn Sensei Hero.webp') no-repeat center center/cover;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    text-align: center;
+    padding: 0 2rem;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.hero-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.3); /* Add dark overlay to improve text readability */
+    z-index: 1;
+}
+
+.hero-section h1 {
+    font-size: 3rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.7);
+    z-index: 2; /* Place text above overlay */
+}
+
+.hero-section p {
+    font-size: 1.5rem;
+    margin: 1rem 0;
+    z-index: 2; /* Place text above overlay */
+}
+
+.hero-section input {
+    padding: 1rem;
+    border-radius: 50px;
+    border: none;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 1rem;
+    z-index: 2; /* Place input above overlay */
+}
+
+.hero-section button {
+    padding: 1rem 2rem;
+    background-color: #4CAF50;
+    color: #ffffff;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    z-index: 2; /* Place button above overlay */
+}
+
+.hero-section button:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        height: 60vh;
+        padding: 1rem;
+    }
+
+    .hero-section h1 {
+        font-size: 2rem;
+    }
+
+    .hero-section p {
+        font-size: 1.2rem;
+    }
+
+    .hero-section input,
+    .hero-section button {
+        width: 100%;
+    }
+}

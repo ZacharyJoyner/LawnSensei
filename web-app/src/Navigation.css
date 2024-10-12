@@ -1,0 +1,55 @@
+/* Navigation.css */
+
+.navbar {
+  background-color: #000000; /* Black background for the navbar */
+  padding: 1rem;
+  display: flex;
+  justify-content: center; /* Center all content in the navbar */
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Enhancing the shadow for better contrast */
+}
+
+.navbar-brand {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.4); /* Adds a shadow to make the text stand out */
+  margin-right: auto; /* Align brand logo to the left */
+}
+
+.navbar .nav-links {
+  display: flex;
+  gap: 2rem; /* Add spacing between navigation links */
+}
+
+.navbar a {
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  transition: color 0.3s ease, background-color 0.3s ease;
+  border-radius: 5px; /* Adds rounded corners for a more modern look */
+}
+
+.navbar a:hover {
+  color: #ffffff;
+  background-color: #45a049; /* Updated to match button hover color for consistency */
+}
+
+/* Responsive Design for Navigation */
+@media (max-width: 768px) {
+  .navbar {
+      flex-direction: column;
+      align-items: flex-start;
+  }
+
+  .navbar .nav-links {
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+  }
+
+  .navbar a {
+      width: 100%;
+      text-align: center;
+  }
+}
