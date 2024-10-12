@@ -1,40 +1,50 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useEffect } from 'react';
 import './HeroSection.css';
+import { useNavigate } from 'react-router-dom';
+import { Loader } from '@googlemaps/js-api-loader';
 
-const HeroSection = () => {
-  const [address, setAddress] = useState('');
+function HeroSection() {
+  const inputRef = useRef(null);
   const navigate = useNavigate();
 
-  const handleInputChange = (e) => {
-    setAddress(e.target.value);
-  };
+  useEffect(() => {
+    const loader = new Loader({
+      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
+      libraries: ['places'],
+    });
 
-  const handleButtonClick = () => {
-    if (address.trim() !== '') {
-      // Store address if needed and navigate to the map drawing page
-      // localStorage.setItem('userAddress', address); // Example of storing the address
-      navigate('/area-calculator'); // Assuming this is the route for the map drawing page
-    } else {
-      alert('Please enter your address.');
-    }
+    loader.load().then(() => {
+      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
+        types: ['geocode'],
+      });
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (place.formatted_address) {
+          console.log('Selected Address:', place.formatted_address);
+        }
+      });
+    });
+  }, []);
+
+  const handleProceedClick = () => {
+    navigate('/lawn-plan');
   };
 
   return (
-    <div className="hero-section">
+    <section className="hero-section">
       <h1>Discover Lawn Sensei</h1>
       <p>Enter your address to get started with creating your custom lawn care plan.</p>
-      <div className="hero-input">
+      <div className="input-container">
         <input
           type="text"
           placeholder="Enter your address"
-          value={address}
-          onChange={handleInputChange}
+          ref={inputRef}
+          className="autocomplete-input"
         />
-        <button className="hero-btn" onClick={handleButtonClick}>Proceed</button>
+        <button onClick={handleProceedClick}>Proceed</button>
       </div>
-    </div>
+    </section>
   );
-};
+}
 
 export default HeroSection;
