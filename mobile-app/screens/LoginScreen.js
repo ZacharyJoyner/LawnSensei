@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import axios from 'axios';
@@ -8,26 +9,23 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
+      const response = await axios.post('http://192.168.x.x:5000/api/auth/login', {
         email,
         password,
       });
-
-      // Assuming the backend returns a token upon successful login
+  
       const token = response.data.token;
+  
+      // Save the token in AsyncStorage
+      await AsyncStorage.setItem('token', token);
+  
       Alert.alert('Login Successful', 'Welcome to Lawn Sensei!');
-
-      // Save token (you can use AsyncStorage or any storage solution)
-      // For example:
-      // await AsyncStorage.setItem('token', token);
-
-      // Navigate to Dashboard
       navigation.navigate('Dashboard');
     } catch (error) {
       console.error(error);
       Alert.alert('Login Failed', 'Please check your credentials and try again.');
     }
-  };
+  };  
 
   return (
     <View style={styles.container}>
