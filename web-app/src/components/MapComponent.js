@@ -1,8 +1,8 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { GoogleMap, useJsApiLoader, Polygon, DrawingManager } from '@react-google-maps/api';
 import { computeArea } from 'spherical-geometry-js';
 
-const libraries = ['drawing']; // Keep this outside of the component to prevent unnecessary reloads
+const libraries = ['drawing'];
 const googleMapsApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
 const containerStyle = {
@@ -11,56 +11,41 @@ const containerStyle = {
 };
 
 const center = {
-  lat: 40.73061, // New York City coordinates for example
+  lat: 40.73061, // Example coordinates for New York City
   lng: -73.935242,
 };
 
-const MapComponent = ({ setLawnArea, setCoordinates }) => {
+const MapComponent = ({ isAreaCalculator }) => {
   const [polygonCoords, setPolygonCoords] = useState([]);
   const mapRef = useRef(null);
 
-  // Use the Google Maps JavaScript API loader hook
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: googleMapsApiKey, // Use environment variable here
+    googleMapsApiKey: googleMapsApiKey,
     libraries: libraries,
   });
 
-  // Define hooks outside of any conditional block to adhere to hook rules
-  const onLoadPolygon = useCallback((polygon) => {
-    const path = polygon.getPath();
-    const coordinates = [];
-    for (let i = 0; i < path.getLength(); i++) {
-      const latLng = path.getAt(i);
-      coordinates.push({ lat: latLng.lat(), lng: latLng.lng() });
-    }
-    setPolygonCoords(coordinates);
-    setCoordinates(coordinates); // Save coordinates to pass to backend
-  }, [setCoordinates]);
+  const onLoad = useCallback((map) => {
+    mapRef.current = map;
+  }, []);
 
-  const onPolygonComplete = useCallback((polygon) => {
-    const path = polygon.getPath();
-    const coordinates = [];
-    let area = 0;
+  const handlePolygonComplete = useCallback((polygon) => {
+    const path = polygon.getPath().getArray().map((latLng) => ({
+      lat: latLng.lat(),
+      lng: latLng.lng(),
+    }));
+    setPolygonCoords(path);
 
-    for (let i = 0; i < path.getLength(); i++) {
-      const latLng = path.getAt(i);
-      coordinates.push({ lat: latLng.lat(), lng: latLng.lng() });
-    }
-
-    // Calculate area of the polygon using `computeArea`
-    area = computeArea(path);
-    setPolygonCoords(coordinates);
-    setCoordinates(coordinates);
-    setLawnArea(area);
-  }, [setLawnArea, setCoordinates]);
-
-  // Loading and error handling
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
+    // Calculate and log the area of the polygon
+    const area = computeArea(polygon.getPath());
+    console.log('Polygon Area:', area, 'square meters');
+  }, []);
 
   if (loadError) {
     return <div>Error loading maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -68,25 +53,37 @@ const MapComponent = ({ setLawnArea, setCoordinates }) => {
       mapContainerStyle={containerStyle}
       center={center}
       zoom={10}
-      onLoad={(map) => (mapRef.current = map)}
+      onLoad={onLoad}
     >
-      <DrawingManager
-        onPolygonComplete={onPolygonComplete}
-        options={{
-          drawingControl: true,
-          drawingControlOptions: {
-            drawingModes: ['polygon'],
-          },
-        }}
-      />
+      {isAreaCalculator && (
+        <DrawingManager
+          onPolygonComplete={handlePolygonComplete}
+          options={{
+            drawingControl: true,
+            drawingControlOptions: {
+              position: window.google.maps.ControlPosition.TOP_CENTER,
+              drawingModes: ['polygon'],
+            },
+            polygonOptions: {
+              fillColor: '#2196F3',
+              fillOpacity: 0.5,
+              strokeWeight: 2,
+              clickable: true,
+              editable: true,
+              draggable: false,
+            },
+          }}
+        />
+      )}
       {polygonCoords.length > 0 && (
         <Polygon
-          path={polygonCoords}
+          paths={polygonCoords}
           options={{
-            fillColor: 'lightblue',
-            strokeColor: 'blue',
-            strokeWeight: 2,
+            fillColor: '#2196F3',
             fillOpacity: 0.4,
+            strokeColor: '#000',
+            strokeOpacity: 1,
+            strokeWeight: 2,
           }}
         />
       )}
