@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import jsPDF from 'jspdf'; // Import jsPDF library
 
 const LawnDashboard = () => {
   const [lawnPlans, setLawnPlans] = useState([]);
   const [isEditing, setIsEditing] = useState(null);
   const [editData, setEditData] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     const fetchLawnPlans = async () => {
@@ -22,7 +25,16 @@ const LawnDashboard = () => {
       }
     };
 
+    const fetchNotifications = async () => {
+      const mockNotifications = [
+        { id: 1, message: 'Time to water your lawn!' },
+        { id: 2, message: 'New lawn care tips available.' },
+      ];
+      setNotifications(mockNotifications);
+    };
+
     fetchLawnPlans();
+    fetchNotifications();
   }, []);
 
   const onEdit = (plan) => {
@@ -38,7 +50,7 @@ const LawnDashboard = () => {
     const token = localStorage.getItem('token');
 
     try {
-      const res = await axios.put(
+      await axios.put(
         `http://localhost:5000/api/lawn-plans/${isEditing}`,
         editData,
         {
@@ -56,12 +68,61 @@ const LawnDashboard = () => {
     }
   };
 
+  const onDelete = async (planId) => {
+    const token = localStorage.getItem('token');
+
+    try {
+      await axios.delete(`http://localhost:5000/api/lawn-plans/${planId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      setLawnPlans(lawnPlans.filter(plan => plan._id !== planId));
+      alert('Lawn care plan deleted successfully!');
+    } catch (err) {
+      console.error('Error deleting lawn plan:', err);
+    }
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Lawn Care Plans', 10, 10);
+    lawnPlans.forEach((plan, index) => {
+      doc.text(`Plan ${index + 1}:`, 10, 20 + index * 10);
+      doc.text(`Grass Type: ${plan.grassType}`, 20, 30 + index * 10);
+      doc.text(`Lawn Area: ${plan.lawnArea} sq ft`, 20, 40 + index * 10);
+      doc.text(`Watering Preference: ${plan.wateringPreference}`, 20, 50 + index * 10);
+    });
+    doc.save('lawn-care-plans.pdf');
+  };
+
+  const filteredPlans = lawnPlans.filter(plan =>
+    plan.grassType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    plan.wateringPreference.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div>
       <h2>Lawn Care Plan Dashboard</h2>
-      {lawnPlans.length > 0 ? (
+      <input
+        type="text"
+        placeholder="Search lawn plans..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <button onClick={exportToPDF}>Export to PDF</button> {/* New export button */}
+      {notifications.length > 0 && (
+        <div className="notifications">
+          {notifications.map(notification => (
+            <div key={notification.id} className="notification">
+              {notification.message}
+            </div>
+          ))}
+        </div>
+      )}
+      {filteredPlans.length > 0 ? (
         <ul>
-          {lawnPlans.map((plan) => (
+          {filteredPlans.map((plan) => (
             <li key={plan._id}>
               {isEditing === plan._id ? (
                 <div>
@@ -85,6 +146,7 @@ const LawnDashboard = () => {
                   <strong>Lawn Area:</strong> {plan.lawnArea} sq ft <br />
                   <strong>Watering Preference:</strong> {plan.wateringPreference} <br />
                   <button onClick={() => onEdit(plan)}>Edit</button>
+                  <button onClick={() => onDelete(plan._id)}>Delete</button>
                 </div>
               )}
             </li>

@@ -7,6 +7,10 @@ const cron = require('node-cron');
 const LawnPlan = require('./models/LawnPlan');
 const { getWeatherData } = require('./utils/weatherApi');
 const sendEmail = require('./utils/email');
+const cors = require('cors');
+const authRoutes = require('./routes/auth'); // Correctly imported
+const rateLimiter = require('./middleware/rateLimiter'); // If applicable
+const authMiddleware = require('./middleware/auth'); // If you have authentication middleware
 
 // Schedule a job to check weather every day at 6 am
 cron.schedule('0 6 * * *', async () => {
@@ -38,7 +42,7 @@ connectDB();
 app.use(express.json());
 
 // Define Routes
-app.use('/api/auth', require('./routes/auth')); // Ensure this line is present
+app.use('/api/auth', authRoutes); // Ensure authRoutes is a router instance
 
 app.get('/', (req, res) => {
   res.send('Welcome to Lawn Sensei Backend API');
@@ -53,3 +57,12 @@ app.use('/api/lawn-plans', lawnPlanRoutes);
 
 const notificationRoutes = require('./routes/notificationRoutes');
 app.use('/api/notifications', notificationRoutes);
+
+// Example of using authMiddleware for protected routes
+// app.use('/api/protected', authMiddleware, protectedRoutes);
+
+// Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});

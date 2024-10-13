@@ -1,0 +1,40 @@
+.lawn-customization {
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+.lawn-customization h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.options label {
+  display: flex;
+  align-items: center;
+}
+
+.options input {
+  margin-right: 10px;
+}
+
+button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}

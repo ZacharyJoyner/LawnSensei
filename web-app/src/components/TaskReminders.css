@@ -1,0 +1,36 @@
+.task-reminders {
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+  margin: 20px 0;
+}
+
+.task-reminders h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.task-reminders ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.task-reminders li {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #e0f7fa;
+  border-radius: 5px;
+}
+
+.reminders {
+  margin-top: 20px;
+}
+
+.reminder {
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: #ffeb3b;
+  border-radius: 5px;
+}

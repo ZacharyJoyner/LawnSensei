@@ -1,0 +1,38 @@
+.user-profile {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f5f5f5;
+  border-radius: 10px;
+}
+
+.user-profile h2 {
+  text-align: center;
+}
+
+.user-profile label {
+  display: block;
+  margin-top: 10px;
+}
+
+.user-profile input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+
+.user-profile button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.user-profile button:hover {
+  background-color: #45a049;
+}

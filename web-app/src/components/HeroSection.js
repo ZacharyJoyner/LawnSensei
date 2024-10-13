@@ -1,50 +1,50 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import './HeroSection.css';
-import { useNavigate } from 'react-router-dom';
-import { Loader } from '@googlemaps/js-api-loader';
+import axios from 'axios';
 
-function HeroSection() {
-  const inputRef = useRef(null);
-  const navigate = useNavigate();
+const HeroSection = () => {
+  const [background, setBackground] = useState('');
+  const [userName, setUserName] = useState(''); // New state for user's name
 
   useEffect(() => {
-    const loader = new Loader({
-      apiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-      libraries: ['places'],
-    });
+    const hour = new Date().getHours();
+    if (hour < 12) {
+      setBackground('morning-bg'); // Morning background
+    } else if (hour < 18) {
+      setBackground('afternoon-bg'); // Afternoon background
+    } else {
+      setBackground('evening-bg'); // Evening background
+    }
 
-    loader.load().then(() => {
-      const autocomplete = new window.google.maps.places.Autocomplete(inputRef.current, {
-        types: ['geocode'],
-      });
-      autocomplete.addListener('place_changed', () => {
-        const place = autocomplete.getPlace();
-        if (place.formatted_address) {
-          console.log('Selected Address:', place.formatted_address);
-        }
-      });
-    });
+    const fetchUserName = async () => {
+      const token = localStorage.getItem('token');
+
+      try {
+        const res = await axios.get('http://localhost:5000/api/user-profile', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        setUserName(res.data.name);
+      } catch (err) {
+        console.error('Error fetching user name:', err);
+      }
+    };
+
+    fetchUserName();
   }, []);
 
-  const handleProceedClick = () => {
-    navigate('/lawn-plan');
-  };
-
   return (
-    <section className="hero-section">
-      <h1>Discover Lawn Sensei</h1>
-      <p>Enter your address to get started with creating your custom lawn care plan.</p>
-      <div className="input-container">
-        <input
-          type="text"
-          placeholder="Enter your address"
-          ref={inputRef}
-          className="autocomplete-input"
-        />
-        <button onClick={handleProceedClick}>Proceed</button>
+    <div className={`hero-section ${background}`}>
+      <div className="hero-content">
+        <h1>Welcome to Lawn Sensei, {userName}!</h1> {/* Personalized welcome message */}
+        <p>Your personal lawn care consultant, ready to help you achieve the perfect lawn.</p>
+        <button className="cta-button" onClick={() => window.location.href = '/get-started'}>
+          Get Started
+        </button>
       </div>
-    </section>
+    </div>
   );
-}
+};
 
 export default HeroSection;
