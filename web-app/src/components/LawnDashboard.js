@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf'; // Import jsPDF library
+const API_URL = process.env.REACT_APP_API_URL;
 
 const LawnDashboard = () => {
   const [lawnPlans, setLawnPlans] = useState([]);
@@ -14,7 +15,7 @@ const LawnDashboard = () => {
       const token = localStorage.getItem('token');
 
       try {
-        const res = await axios.get('http://localhost:5000/api/lawn-plans', {
+        const res = await axios.get(`${API_URL}/lawn-plans`, {
           headers: {
             'Authorization': `Bearer ${token}`,
           },

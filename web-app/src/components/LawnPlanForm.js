@@ -1,16 +1,23 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import MapComponent from './MapComponent';
+import { validateLawnPlanForm } from '../utils/validation';
 
 const LawnPlanForm = () => {
   const [address, setAddress] = useState('');
   const [wateringPreference, setWateringPreference] = useState('');
   const [lawnArea, setLawnArea] = useState(0);
   const [coordinates, setCoordinates] = useState([]);
+  const [errors, setErrors] = useState({});
 
   const onSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
+    const formErrors = validateLawnPlanForm({ address, wateringPreference, lawnArea });
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
 
     try {
       const res = await axios.post(
@@ -38,6 +45,7 @@ const LawnPlanForm = () => {
         <div>
           <label>Address:</label>
           <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
+          {errors.address && <span className="error">{errors.address}</span>}
         </div>
         <div>
           <label>Watering Preference:</label>

@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 const { getCoordinatesFromAddress } = require('../utils/googleApi');
 const { getWeatherData } = require('../utils/weatherApi');
+const errorHandler = require('../utils/errorHandler');
 
 // Create Lawn Care Plan
 router.post(
@@ -44,8 +45,7 @@ router.post(
         const lawnPlan = await newLawnPlan.save();
         res.json(lawnPlan);
       } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        errorHandler(res, err);
       }
     }
   );
@@ -73,8 +73,7 @@ router.post(
   
       res.json(lawnPlan);
     } catch (err) {
-      console.error(err.message);
-      res.status(500).send('Server Error');
+      errorHandler(res, err);
     }
   });
   

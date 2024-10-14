@@ -11,6 +11,12 @@ const cors = require('cors');
 const authRoutes = require('./routes/auth'); // Correctly imported
 const rateLimiter = require('./middleware/rateLimiter'); // If applicable
 const authMiddleware = require('./middleware/auth'); // If you have authentication middleware
+const lawnRoutes = require('./routes/lawnRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const uploadRoutes = require('./routes/upload');
+const rateLimit = require('express-rate-limit');
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 // Schedule a job to check weather every day at 6 am
 cron.schedule('0 6 * * *', async () => {
@@ -41,8 +47,39 @@ connectDB();
 // Middleware to parse JSON request body
 app.use(express.json());
 
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+
+app.use(limiter);
+
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Lawn Sensei API',
+      version: '1.0.0',
+      description: 'Lawn Sensei API Information',
+    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+      },
+    ],
+  },
+  apis: ['./src/routes/*.js'],
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 // Define Routes
-app.use('/api/auth', authRoutes); // Ensure authRoutes is a router instance
+app.use('/api/auth', authRoutes);
+app.use('/api/lawn-plans', lawnPlanRoutes);
+app.use('/api/lawns', lawnRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.get('/', (req, res) => {
   res.send('Welcome to Lawn Sensei Backend API');
@@ -51,12 +88,6 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
-
-const lawnPlanRoutes = require('./routes/lawnPlanRoutes');
-app.use('/api/lawn-plans', lawnPlanRoutes);
-
-const notificationRoutes = require('./routes/notificationRoutes');
-app.use('/api/notifications', notificationRoutes);
 
 // Example of using authMiddleware for protected routes
 // app.use('/api/protected', authMiddleware, protectedRoutes);
