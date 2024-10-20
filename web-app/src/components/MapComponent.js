@@ -1,63 +1,67 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Polygon, DrawingManager } from '@react-google-maps/api';
-import { computeArea } from 'spherical-geometry-js';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleMap, DrawingManager, Polygon } from '@react-google-maps/api';
+import { useOnboarding } from '../context/OnboardingContext';
 
-const libraries = ['drawing'];
-const googleMapsApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-
-const containerStyle = {
-  width: '100%',
-  height: '500px',
-};
-
-const center = {
-  lat: 40.73061, // Example coordinates for New York City
-  lng: -73.935242,
-};
-
-const MapComponent = ({ isAreaCalculator }) => {
-  const [polygonCoords, setPolygonCoords] = useState([]);
+const MapComponent = ({ address }) => {
+  const { onboardingData } = useOnboarding();
+  const [center, setCenter] = useState({ lat: 0, lng: 0 });
+  const [propertyBoundary, setPropertyBoundary] = useState(null);
+  const [sections, setSections] = useState(onboardingData.sections || []);
   const mapRef = useRef(null);
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: googleMapsApiKey,
-    libraries: libraries,
-  });
+  useEffect(() => {
+    if (address) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address: address }, (results, status) => {
+        if (status === 'OK') {
+          setCenter(results[0].geometry.location.toJSON());
+        } else {
+          console.error('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+  }, [address]);
 
-  const onLoad = useCallback((map) => {
+  const onMapLoad = useCallback((map) => {
     mapRef.current = map;
+    // Additional map configurations can be added here
   }, []);
 
-  const handlePolygonComplete = useCallback((polygon) => {
-    const path = polygon.getPath().getArray().map((latLng) => ({
-      lat: latLng.lat(),
-      lng: latLng.lng(),
-    }));
-    setPolygonCoords(path);
-
-    // Calculate and log the area of the polygon
-    const area = computeArea(polygon.getPath());
-    console.log('Polygon Area:', area, 'square meters');
+  const onBoundaryComplete = useCallback((polygon) => {
+    const path = polygon.getPath().getArray().map(latLng => ({ lat: latLng.lat(), lng: latLng.lng() }));
+    setPropertyBoundary(path);
+    const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
+    // You can handle the area or other properties here
+    polygon.setMap(null); // Remove the polygon from the map
   }, []);
 
-  if (loadError) {
-    return <div>Error loading maps</div>;
-  }
-
-  if (!isLoaded) {
-    return <div>Loading...</div>;
-  }
+  const onSectionComplete = useCallback((polygon) => {
+    const path = polygon.getPath().getArray().map(latLng => ({ lat: latLng.lat(), lng: latLng.lng() }));
+    const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
+    const newSection = {
+      id: Date.now().toString(),
+      path: path,
+      label: `Section ${sections.length + 1}`,
+      area: Math.round(area * 10.764), // Convert to square feet
+    };
+    setSections(prevSections => [...prevSections, newSection]);
+    // Update the onboarding context with the new section
+    // Assuming you have a method to update sections in the context
+    updateOnboardingData({ sections: [...sections, newSection] });
+    polygon.setMap(null); // Remove the polygon from the map
+  }, [sections, updateOnboardingData]);
 
   return (
-    <GoogleMap
-      mapContainerStyle={containerStyle}
-      center={center}
-      zoom={10}
-      onLoad={onLoad}
-    >
-      {isAreaCalculator && (
+    <div style={{ height: '400px', width: '100%' }}>
+      <GoogleMap
+        mapContainerStyle={{ height: '100%', width: '100%' }}
+        center={center}
+        zoom={18}
+        onLoad={onMapLoad}
+        mapTypeId="satellite"
+      >
         <DrawingManager
-          onPolygonComplete={handlePolygonComplete}
+          onPolygonComplete={propertyBoundary ? onSectionComplete : onBoundaryComplete}
           options={{
             drawingControl: true,
             drawingControlOptions: {
@@ -66,28 +70,45 @@ const MapComponent = ({ isAreaCalculator }) => {
             },
             polygonOptions: {
               fillColor: '#2196F3',
-              fillOpacity: 0.5,
+              fillOpacity: 0.2,
               strokeWeight: 2,
               clickable: true,
               editable: true,
-              draggable: false,
+              draggable: true,
             },
           }}
         />
-      )}
-      {polygonCoords.length > 0 && (
-        <Polygon
-          paths={polygonCoords}
-          options={{
-            fillColor: '#2196F3',
-            fillOpacity: 0.4,
-            strokeColor: '#000',
-            strokeOpacity: 1,
-            strokeWeight: 2,
-          }}
-        />
-      )}
-    </GoogleMap>
+        {propertyBoundary && (
+          <Polygon
+            paths={propertyBoundary}
+            options={{
+              fillColor: '#00FF00',
+              fillOpacity: 0.35,
+              strokeColor: '#0000FF',
+              strokeOpacity: 0.8,
+              strokeWeight: 2,
+              editable: true,
+              draggable: true,
+            }}
+          />
+        )}
+        {sections.map((section) => (
+          <Polygon
+            key={section.id}
+            paths={section.path}
+            options={{
+              fillColor: '#FF0000',
+              fillOpacity: 0.35,
+              strokeColor: '#FF0000',
+              strokeOpacity: 0.8,
+              strokeWeight: 2,
+              editable: true,
+              draggable: true,
+            }}
+          />
+        ))}
+      </GoogleMap>
+    </div>
   );
 };
 

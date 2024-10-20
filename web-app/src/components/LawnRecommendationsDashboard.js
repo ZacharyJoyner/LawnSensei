@@ -1,123 +1,187 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
-import Calendar from 'react-calendar';
-import './LawnRecommendationsDashboard.css';
-import 'react-calendar/dist/Calendar.css'; // Import calendar styles
+import { Container, Box, Typography, CircularProgress, Alert, Paper, Chip, Grid, Button } from '@mui/material';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { useOnboarding } from '../context/OnboardingContext';
+
+const localizer = momentLocalizer(moment);
 
 const LawnRecommendationsDashboard = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(new Date()); // State for selected date
-  const [notifications, setNotifications] = useState([]); // New state for notifications
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const calendarRef = useRef(null);
+  const { onboardingData } = useOnboarding();
 
-  useEffect(() => {
-    // Fetch suggestions and tasks from the backend API
-    fetch('/api/suggestions')
-      .then(response => response.json())
-      .then(data => setSuggestions(data))
-      .catch(error => console.error('Error fetching suggestions:', error));
-
-    fetch('/api/tasks')
-      .then(response => response.json())
-      .then(data => setTasks(data))
-      .catch(error => console.error('Error fetching tasks:', error));
-
-    const fetchNotifications = async () => {
-      const mockNotifications = [
-        { id: 1, message: 'Don’t forget to fertilize your lawn this weekend!' },
-        { id: 2, message: 'New lawn care tips available.' },
-      ];
-      setNotifications(mockNotifications);
-    };
-
-    fetchNotifications();
+  const fetchSuggestions = useCallback(async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/suggestions`);
+      setSuggestions(response.data);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+    }
   }, []);
 
-  const handleTaskChange = (taskId) => {
-    setTasks(prevTasks => 
-      prevTasks.map(task => 
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
-  };
+  const fetchTasks = useCallback(async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/tasks`);
+      setTasks(response.data);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  }, []);
 
-  // Function to handle date change
-  const onDateChange = (date) => {
-    setSelectedDate(date);
-  };
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await Promise.all([fetchSuggestions(), fetchTasks()]);
+    } catch (error) {
+      setError('An error occurred while fetching data. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchSuggestions, fetchTasks]);
 
-  const setReminder = (taskId) => {
-    const task = tasks.find(task => task.id === taskId);
-    if (task) {
-      const reminderMessage = `Reminder: ${task.title} is due soon!`;
-      setNotifications(prevNotifications => [
-        ...prevNotifications,
-        { id: notifications.length + 1, message: reminderMessage }
-      ]);
-      alert('Reminder set!');
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const taskEvents = tasks.map(task => ({
+      title: task.name,
+      start: new Date(task.date),
+      end: new Date(task.date),
+      allDay: true,
+    }));
+    setEvents(taskEvents);
+  }, [tasks]);
+
+  const handleTaskComplete = async (taskId) => {
+    try {
+      await axios.put(`${process.env.REACT_APP_API_URL}/tasks/${taskId}`, { completed: true });
+      fetchTasks(); // Refresh tasks after updating
+    } catch (error) {
+      console.error('Error updating task:', error);
     }
   };
 
+  if (loading) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="sm">
+        <Box sx={{ mt: 4 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </Container>
+    );
+  }
+
   return (
-    <div className="lawn-recommendations-dashboard">
-      <h2>Personalized Lawn Care Suggestions</h2>
-      <div className="suggestions">
-        {suggestions.map((suggestion, index) => (
-          <div key={index} className="suggestion-card">
-            <img src={suggestion.imageUrl} alt={suggestion.name} />
-            <h3>{suggestion.name}</h3>
-            <p>{suggestion.description}</p>
-            <button onClick={() => window.location.href = suggestion.link}>Buy Now</button>
-          </div>
-        ))}
-      </div>
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Personalized Lawn Care Dashboard
+        </Typography>
+        <Grid container spacing={4}>
+          {/* Lawn Care Suggestions */}
+          <Grid item xs={12} md={6}>
+            <Paper elevation={3} sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Lawn Care Suggestions
+              </Typography>
+              {suggestions.length > 0 ? (
+                suggestions.map((suggestion) => (
+                  <Box key={suggestion.id} sx={{ mb: 2 }}>
+                    <Chip label={suggestion.name} color="primary" sx={{ mb: 1 }} />
+                    <Typography variant="body2">{suggestion.description}</Typography>
+                    {suggestion.buyLink && (
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        size="small"
+                        href={suggestion.buyLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ mt: 1 }}
+                      >
+                        Buy Now
+                      </Button>
+                    )}
+                  </Box>
+                ))
+              ) : (
+                <Typography>No suggestions available at this time.</Typography>
+              )}
+            </Paper>
+          </Grid>
 
-      <h2>Scheduled Tasks</h2>
-      <div className="tasks">
-        {tasks.map(task => (
-          <div key={task.id} className="task">
-            <input 
-              type="checkbox" 
-              checked={task.completed} 
-              onChange={() => handleTaskChange(task.id)} 
-            />
-            <label>{task.title}</label>
-            <button onClick={() => setReminder(task.id)}>Set Reminder</button>
-          </div>
-        ))}
-      </div>
+          {/* Scheduled Tasks */}
+          <Grid item xs={12} md={6}>
+            <Paper elevation={3} sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Scheduled Tasks
+              </Typography>
+              {tasks.length > 0 ? (
+                tasks.map((task) => (
+                  <Box key={task._id} sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                    <Button
+                      variant={task.completed ? 'contained' : 'outlined'}
+                      color={task.completed ? 'success' : 'primary'}
+                      onClick={() => handleTaskComplete(task._id)}
+                      sx={{ mr: 2 }}
+                      aria-label={`Mark task ${task.name} as complete`}
+                    >
+                      {task.completed ? 'Completed' : 'Complete'}
+                    </Button>
+                    <Typography variant="body1" sx={{ textDecoration: task.completed ? 'line-through' : 'none' }}>
+                      {task.name}
+                    </Typography>
+                  </Box>
+                ))
+              ) : (
+                <Typography>No tasks scheduled.</Typography>
+              )}
+            </Paper>
+          </Grid>
 
-      <h2>Calendar View</h2>
-      <div className="calendar-view">
-        <Calendar
-          onChange={onDateChange}
-          value={selectedDate}
-        />
-        <div className="tasks-for-date">
-          <h3>Tasks for {selectedDate.toDateString()}</h3>
-          {tasks.filter(task => new Date(task.date).toDateString() === selectedDate.toDateString()).map(task => (
-            <div key={task.id} className="task">
-              <input 
-                type="checkbox" 
-                checked={task.completed} 
-                onChange={() => handleTaskChange(task.id)} 
+          {/* Calendar View */}
+          <Grid item xs={12}>
+            <Paper elevation={3} sx={{ p: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                Calendar View
+              </Typography>
+              <Calendar
+                localizer={localizer}
+                events={events}
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: 500 }}
+                eventPropGetter={(event) => ({
+                  style: {
+                    backgroundColor: event.allDay ? '#4CAF50' : '#2196F3',
+                    color: 'white',
+                  },
+                })}
               />
-              <label>{task.title}</label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {notifications.length > 0 && (
-        <div className="notifications">
-          {notifications.map(notification => (
-            <div key={notification.id} className="notification">
-              {notification.message}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+    </Container>
   );
 };
 

@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -9,27 +9,24 @@ const LoginScreen = ({ navigation }) => {
 
   const handleLogin = async () => {
     try {
-      const response = await axios.post('http://192.168.x.x:5000/api/auth/login', {
+      const response = await axios.post(`${process.env.API_URL}/auth/login`, {
         email,
         password,
       });
-  
+
       const token = response.data.token;
-  
-      // Save the token in AsyncStorage
       await AsyncStorage.setItem('token', token);
-  
-      Alert.alert('Login Successful', 'Welcome to Lawn Sensei!');
+
       navigation.navigate('Dashboard');
     } catch (error) {
-      console.error(error);
-      Alert.alert('Login Failed', 'Please check your credentials and try again.');
+      console.error('Login error:', error);
+      alert('Login failed. Please check your credentials.');
     }
-  };  
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Login</Text>
+      <Text style={styles.title}>Login to Lawn Sensei</Text>
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -44,9 +41,10 @@ const LoginScreen = ({ navigation }) => {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        autoCapitalize="none"
       />
-      <Button title="Login" onPress={handleLogin} />
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        <Text style={styles.buttonText}>Login</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -60,8 +58,8 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
     marginBottom: 20,
+    textAlign: 'center',
   },
   input: {
     height: 40,
@@ -69,6 +67,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 15,
     paddingHorizontal: 10,
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

@@ -1,10 +1,25 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import LawnDashboard from '../components/LawnDashboard';
 
-const DashboardScreen = () => {
+const DashboardScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Lawn Sensei Dashboard!</Text>
+      <LawnDashboard />
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('LawnPlanForm')}
+        >
+          <Text style={styles.buttonText}>Create New Lawn Plan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('LawnAreaCalculator')}
+        >
+          <Text style={styles.buttonText}>Calculate Lawn Area</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -12,11 +27,20 @@ const DashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  title: {
-    fontSize: 24,
+  buttonContainer: {
+    padding: 20,
+  },
+  button: {
+    backgroundColor: '#4CAF50',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });

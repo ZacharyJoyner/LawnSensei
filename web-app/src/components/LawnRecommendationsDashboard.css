@@ -1,57 +1,43 @@
 /* LawnRecommendationsDashboard.css */
 
 .lawn-recommendations-dashboard {
-  padding: 2rem;
+  padding: 20px;
   font-family: Arial, sans-serif;
-  color: #333;
 }
 
 .suggestions {
   display: flex;
   flex-wrap: wrap;
-  gap: 2rem;
-  margin-bottom: 2rem;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .suggestion-card {
-  background: #f9f9f9;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 1rem;
-  width: calc(33% - 2rem);
+  width: calc(33.33% - 20px);
+  background-color: #e8f5e9;
+  border-radius: 8px;
+  padding: 15px;
   text-align: center;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.suggestion-card:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .suggestion-card img {
-  max-width: 100%;
-  height: auto;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
   border-radius: 8px;
-}
-
-.suggestion-card h3 {
-  font-size: 1.5rem;
-  margin: 1rem 0;
-}
-
-.suggestion-card p {
-  font-size: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 10px;
 }
 
 .suggestion-card button {
   background-color: #4CAF50;
-  color: #fff;
+  color: white;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 10px 20px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  margin-top: 10px;
+  transition: background-color 0.3s;
 }
 
 .suggestion-card button:hover {
@@ -59,40 +45,38 @@
 }
 
 .tasks {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 2rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 30px;
 }
 
 .task {
   display: flex;
   align-items: center;
-  background: #f9f9f9;
-  padding: 1rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.3s ease;
-}
-
-.task:hover {
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 10px;
 }
 
 .task input[type="checkbox"] {
-  margin-right: 1rem;
+  margin-right: 10px;
 }
 
 .calendar-view {
-  background: #f9f9f9;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  margin-top: 2rem;
-  transition: box-shadow 0.3s ease;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  padding: 15px;
 }
 
-.calendar-view:hover {
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+@media (max-width: 768px) {
+  .suggestion-card {
+    width: calc(50% - 10px);
+  }
 }
+
+@media (max-width: 480px) {
+  .suggestion-card {
+    width: 100%;
+  }
+}
+
+/* Add more styles for the calendar component when implemented */

@@ -1,58 +1,76 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Formik, Form, Field, ErrorMessage } from 'formik';
+import * as Yup from 'yup';
 import axios from 'axios';
-import MapComponent from './MapComponent';
-import { validateLawnPlanForm } from '../utils/validation';
+
+const validationSchema = Yup.object().shape({
+  address: Yup.string().required('Address is required'),
+  wateringPreference: Yup.string().required('Watering preference is required'),
+  lawnArea: Yup.number().positive('Lawn area must be positive').required('Lawn area is required'),
+});
 
 const LawnPlanForm = () => {
-  const [address, setAddress] = useState('');
-  const [wateringPreference, setWateringPreference] = useState('');
-  const [lawnArea, setLawnArea] = useState(0);
-  const [coordinates, setCoordinates] = useState([]);
-  const [errors, setErrors] = useState({});
+  const initialValues = {
+    address: '',
+    wateringPreference: '',
+    lawnArea: '',
+  };
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
-    const formErrors = validateLawnPlanForm({ address, wateringPreference, lawnArea });
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return;
-    }
-
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
-      const res = await axios.post(
-        'http://localhost:5000/api/lawn-plans',
-        { address, wateringPreference, lawnArea, coordinates },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-        }
-      );
+      const token = localStorage.getItem('token');
+      await axios.post(`${process.env.REACT_APP_API_URL}/lawn-plans`, values, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       alert('Lawn care plan created successfully!');
+      resetForm();
     } catch (err) {
       console.error(err);
       alert('Error creating lawn care plan');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div>
       <h2>Create Lawn Care Plan</h2>
-      <MapComponent setLawnArea={setLawnArea} setCoordinates={setCoordinates} />
-      <form onSubmit={onSubmit}>
-        <div>
-          <label>Address:</label>
-          <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
-          {errors.address && <span className="error">{errors.address}</span>}
-        </div>
-        <div>
-          <label>Watering Preference:</label>
-          <input type="text" value={wateringPreference} onChange={(e) => setWateringPreference(e.target.value)} />
-        </div>
-        <button type="submit">Create Lawn Care Plan</button>
-      </form>
+      <Formik
+        initialValues={initialValues}
+        validationSchema={validationSchema}
+        onSubmit={handleSubmit}
+      >
+        {({ isSubmitting }) => (
+          <Form>
+            <div>
+              <label htmlFor="address">Address:</label>
+              <Field type="text" name="address" />
+              <ErrorMessage name="address" component="div" className="error" />
+            </div>
+            <div>
+              <label htmlFor="wateringPreference">Watering Preference:</label>
+              <Field as="select" name="wateringPreference">
+                <option value="">Select a preference</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </Field>
+              <ErrorMessage name="wateringPreference" component="div" className="error" />
+            </div>
+            <div>
+              <label htmlFor="lawnArea">Lawn Area (sq ft):</label>
+              <Field type="number" name="lawnArea" />
+              <ErrorMessage name="lawnArea" component="div" className="error" />
+            </div>
+            <button type="submit" disabled={isSubmitting}>
+              Create Lawn Care Plan
+            </button>
+          </Form>
+        )}
+      </Formik>
     </div>
   );
 };

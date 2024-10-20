@@ -1,47 +1,36 @@
-import React, { useState, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Navigation from './components/Navigation';
-import './Navigation.css';
-import { AuthProvider } from './context/AuthContext';
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ErrorBoundary from './components/ErrorBoundary';
+import { OnboardingProvider } from './context/OnboardingContext';
+import { CircularProgress } from '@mui/material';
 
-// Lazy load components
-const HeroSection = lazy(() => import('./components/HeroSection'));
-const LawnCareForm = lazy(() => import('./components/forms/LawnCareForm'));
-const MapComponent = lazy(() => import('./components/MapComponent'));
+const Welcome = lazy(() => import('./components/onboarding/Welcome'));
+const Onboarding = lazy(() => import('./components/onboarding/Onboarding'));
+const Review = lazy(() => import('./components/onboarding/Review'));
+const UserAccount = lazy(() => import('./components/onboarding/UserAccount'));
 const LawnRecommendations = lazy(() => import('./components/LawnRecommendations'));
+const LawnRecommendationsDashboard = lazy(() => import('./components/LawnRecommendationsDashboard'));
 
-function App() {
-  const [formData, setFormData] = useState(null);
-
-  const handleFormSubmit = (data) => {
-    setFormData(data);
-  };
-
+const App = () => {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Navigation />
-          <Suspense fallback={<div>Loading...</div>}>
+    <ErrorBoundary>
+      <OnboardingProvider>
+        <Router>
+          <Suspense fallback={<CircularProgress />}>
             <Routes>
-              <Route path="/" element={<HeroSection />} />
-              <Route
-                path="/lawn-plan"
-                element={
-                  <div>
-                    <LawnCareForm onSubmit={handleFormSubmit} />
-                    <MapComponent isAreaCalculator={false} />
-                    {formData && <LawnRecommendations formData={formData} />}
-                  </div>
-                }
-              />
-              <Route path="/area-calculator" element={<MapComponent isAreaCalculator={true} />} />
+              <Route path="/" element={<Welcome />} />
+              <Route path="/onboarding/*" element={<Onboarding />} />
+              <Route path="/review" element={<Review />} />
+              <Route path="/account" element={<UserAccount />} />
+              <Route path="/recommendations" element={<LawnRecommendations />} />
+              <Route path="/dashboard" element={<LawnRecommendationsDashboard />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Suspense>
-        </div>
-      </Router>
-    </AuthProvider>
+        </Router>
+      </OnboardingProvider>
+    </ErrorBoundary>
   );
-}
+};
 
 export default App;

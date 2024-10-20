@@ -2,8 +2,8 @@
 
 .hero-section {
     position: relative;
-    height: calc(100vh - 80px); /* Adjusted height to remove white space */
-    background: url('../assets/Lawn Sensei Hero.webp') no-repeat center center/cover;
+    height: calc(100vh - 80px);
+    background: url('../assets/LawnSenseiHero.png') no-repeat center center/cover;
     display: flex;
     flex-direction: column;
     align-items: center;

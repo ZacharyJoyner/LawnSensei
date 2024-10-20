@@ -1,49 +1,73 @@
-import React, { useEffect, useState } from 'react';
-import './HeroSection.css';
-import axios from 'axios';
+import React, { useState } from 'react';
+import { Typography, Box, Button, Stepper, Step, StepLabel } from '@mui/material';
+import GetStartedButton from './GetStartedButton';
+import AddressEntry from './onboarding/AddressEntry';
+import PropertyView from './onboarding/PropertyView';
+import SectionDrawing from './onboarding/SectionDrawing';
+import Review from './onboarding/Review';
+
+const steps = ['Welcome', 'Enter Your Address', 'Property View', 'Section Drawing', 'Review'];
 
 const HeroSection = () => {
-  const [background, setBackground] = useState('');
-  const [userName, setUserName] = useState(''); // New state for user's name
+  const [activeStep, setActiveStep] = useState(0);
 
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) {
-      setBackground('morning-bg'); // Morning background
-    } else if (hour < 18) {
-      setBackground('afternoon-bg'); // Afternoon background
-    } else {
-      setBackground('evening-bg'); // Evening background
+  const handleNext = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
+  };
+
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
+  };
+
+  const handleGetStarted = () => {
+    handleNext();
+  };
+
+  const getStepContent = (step) => {
+    switch (step) {
+      case 0:
+        return (
+          <>
+            <Typography variant="h2">Welcome to Lawn Sensei</Typography>
+            <Typography variant="h5">
+              Your personal lawn care consultant, ready to help you achieve the perfect lawn.
+            </Typography>
+            <GetStartedButton onClick={handleGetStarted} />
+          </>
+        );
+      case 1:
+        return <AddressEntry handleNext={handleNext} />;
+      case 2:
+        return <PropertyView handleNext={handleNext} handleBack={handleBack} />;
+      case 3:
+        return <SectionDrawing handleNext={handleNext} handleBack={handleBack} />;
+      case 4:
+        return <Review handleBack={handleBack} />;
+      default:
+        return 'Unknown step';
     }
-
-    const fetchUserName = async () => {
-      const token = localStorage.getItem('token');
-
-      try {
-        const res = await axios.get('http://localhost:5000/api/user-profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        setUserName(res.data.name);
-      } catch (err) {
-        console.error('Error fetching user name:', err);
-      }
-    };
-
-    fetchUserName();
-  }, []);
+  };
 
   return (
-    <div className={`hero-section ${background}`}>
-      <div className="hero-content">
-        <h1>Welcome to Lawn Sensei, {userName}!</h1> {/* Personalized welcome message */}
-        <p>Your personal lawn care consultant, ready to help you achieve the perfect lawn.</p>
-        <button className="cta-button" onClick={() => window.location.href = '/get-started'}>
-          Get Started
-        </button>
-      </div>
-    </div>
+    <Box sx={{ width: '100%', maxWidth: '800px', margin: '0 auto', mt: 5 }}>
+      <Stepper activeStep={activeStep} alternativeLabel>
+        {steps.map((label) => (
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
+        ))}
+      </Stepper>
+      <Box sx={{ mt: 4, mb: 2 }}>
+        {getStepContent(activeStep)}
+      </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+        {activeStep > 0 && activeStep < steps.length - 1 && (
+          <Button onClick={handleBack}>
+            Back
+          </Button>
+        )}
+      </Box>
+    </Box>
   );
 };
 

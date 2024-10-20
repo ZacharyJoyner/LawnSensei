@@ -1,6 +1,6 @@
 const express = require('express');
-const auth = require('../middleware/auth');
 const router = express.Router();
+const auth = require('../middleware/auth');
 
 router.post('/send', auth, (req, res) => {
   const { message } = req.body;

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import jsPDF from 'jspdf'; // Import jsPDF library
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLeaf, faWater, faSeedling } from '@fortawesome/free-solid-svg-icons';
 const API_URL = process.env.REACT_APP_API_URL;
 
 const LawnDashboard = () => {

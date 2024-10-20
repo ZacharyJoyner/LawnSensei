@@ -1,41 +1,86 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Typography, Container, Box, List, ListItem, ListItemIcon, ListItemText, Paper, Alert, CircularProgress, Button } from '@mui/material';
+import { Grass as GrassIcon } from '@mui/icons-material';
+import { useOnboarding } from '../context/OnboardingContext';
 
-const LawnRecommendations = ({ formData }) => {
-  if (!formData) {
-    return <div>Please provide lawn details to get recommendations.</div>;
-  }
+const LawnRecommendations = React.memo(() => {
+  const { onboardingData } = useOnboarding();
+  const [recommendations, setRecommendations] = useState([]);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const { grassType, lawnUsage, wateringPreference, region } = formData;
+  const fetchRecommendations = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(onboardingData),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch recommendations.');
+      }
+      const data = await response.json();
+      setRecommendations(data.recommendations);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [onboardingData]);
 
-  // Example recommendations based on user input
-  const recommendations = [];
+  useEffect(() => {
+    fetchRecommendations();
+  }, [fetchRecommendations]);
 
-  if (grassType === 'cool-season') {
-    recommendations.push('Apply fertilizer with high nitrogen content in early spring.');
-  } else if (grassType === 'warm-season') {
-    recommendations.push('Use a slow-release fertilizer in late spring.');
-  }
-
-  if (wateringPreference === 'low') {
-    recommendations.push('Water deeply but infrequently, aiming for 1 inch of water per week.');
-  } else if (wateringPreference === 'high') {
-    recommendations.push('Water more frequently to maintain lush growth, especially in hot weather.');
-  }
-
-  if (lawnUsage === 'high-traffic') {
-    recommendations.push('Consider overseeding with a durable grass variety to keep up with wear and tear.');
+  if (loading) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
   }
 
   return (
-    <div>
-      <h2>Lawn Care Recommendations</h2>
-      <ul>
-        {recommendations.map((rec, index) => (
-          <li key={index}>{rec}</li>
-        ))}
-      </ul>
-    </div>
+    <Container maxWidth="md">
+      <Box sx={{ mt: 4, mb: 4 }}>
+        <Typography variant="h4" gutterBottom>
+          Lawn Care Recommendations
+        </Typography>
+        {error ? (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+            <Button onClick={fetchRecommendations} sx={{ ml: 2 }}>
+              Retry
+            </Button>
+          </Alert>
+        ) : (
+          <Paper elevation={3} sx={{ p: 3 }}>
+            {recommendations.length > 0 ? (
+              <List>
+                {recommendations.map((rec) => (
+                  <ListItem key={rec.id}>
+                    <ListItemIcon>
+                      <GrassIcon color="primary" />
+                    </ListItemIcon>
+                    <ListItemText primary={rec.title} secondary={rec.description} />
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography>No recommendations available at this time.</Typography>
+            )}
+          </Paper>
+        )}
+        <Button onClick={fetchRecommendations} sx={{ mt: 2 }}>
+          Refresh Recommendations
+        </Button>
+      </Box>
+    </Container>
   );
-};
+});
 
 export default LawnRecommendations;
