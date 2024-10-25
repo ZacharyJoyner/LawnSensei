@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Typography, Container, Box, TextField, Button, Alert } from '@mui/material';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { useNavigate } from 'react-router-dom';
 
-const LawnPreferences = () => {
+const LawnPreferences = ({ handleNext, handleBack }) => {
   const { onboardingData, updateOnboardingData } = useOnboarding();
-  const navigate = useNavigate();
   const [preferences, setPreferences] = useState(onboardingData.userPreferences || {});
   const [error, setError] = useState(null);
 
@@ -14,13 +12,17 @@ const LawnPreferences = () => {
     setPreferences({ ...preferences, [name]: checked });
   };
 
-  const handleNext = () => {
-    if (!preferences) {
+  const handleNextStep = () => {
+    // Validate that at least one preference is selected
+    const hasPreferences = Object.values(preferences).some(value => value);
+    if (!hasPreferences) {
       setError('Please select at least one preference.');
       return;
     }
+
+    // Save preferences and proceed to next step
     updateOnboardingData({ userPreferences: preferences });
-    navigate('/lawn-care-insights');
+    handleNext();
   };
 
   return (
@@ -35,7 +37,7 @@ const LawnPreferences = () => {
           </Alert>
         )}
         <Box>
-          <Typography variant="subtitle1">Select your lawn care preferences:</Typography>
+          <Typography variant="subtitle1" gutterBottom>Select your lawn care preferences:</Typography>
           <Box sx={{ mt: 2 }}>
             <TextField
               type="checkbox"
@@ -72,10 +74,48 @@ const LawnPreferences = () => {
               Enhance lawn aesthetics
             </Typography>
           </Box>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              type="checkbox"
+              name="waterConservation"
+              checked={preferences.waterConservation || false}
+              onChange={handleChange}
+              aria-label="Water Conservation"
+            />
+            <Typography variant="body1" component="span" sx={{ ml: 1 }}>
+              Focus on water conservation
+            </Typography>
+          </Box>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              type="checkbox"
+              name="lowMaintenance"
+              checked={preferences.lowMaintenance || false}
+              onChange={handleChange}
+              aria-label="Low Maintenance"
+            />
+            <Typography variant="body1" component="span" sx={{ ml: 1 }}>
+              Prefer low maintenance solutions
+            </Typography>
+          </Box>
         </Box>
-        <Button variant="contained" color="primary" onClick={handleNext} sx={{ mt: 3 }} aria-label="Next Preferences">
-          Next
-        </Button>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
+          <Button 
+            variant="outlined" 
+            onClick={handleBack}
+            aria-label="Back"
+          >
+            Back
+          </Button>
+          <Button 
+            variant="contained" 
+            color="primary" 
+            onClick={handleNextStep}
+            aria-label="Next"
+          >
+            Next
+          </Button>
+        </Box>
       </Box>
     </Container>
   );

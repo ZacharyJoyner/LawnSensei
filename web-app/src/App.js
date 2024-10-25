@@ -2,11 +2,9 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress } from '@mui/material';
 import OnboardingStepper from './components/onboarding/OnboardingStepper';
-import OnboardingSummary from './components/onboarding/OnboardingSummary';
 
 // Lazy-loaded components
 const Welcome = lazy(() => import('./components/onboarding/Welcome'));
-const PropertyView = lazy(() => import('./components/onboarding/PropertyView'));
 const Dashboard = lazy(() => import('./components/Dashboard'));
 
 const App = () => {
@@ -14,9 +12,7 @@ const App = () => {
     <Suspense fallback={<CircularProgress />}>
       <Routes>
         <Route path="/" element={<Welcome />} />
-        <Route path="/enter-address" element={<OnboardingStepper />} />
-        <Route path="/property-view" element={<PropertyView />} />
-        <Route path="/onboarding-summary" element={<OnboardingSummary />} />
+        <Route path="/onboarding/*" element={<OnboardingStepper />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

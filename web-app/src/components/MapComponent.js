@@ -11,9 +11,21 @@ const mapContainerStyle = {
   height: '400px',
 };
 
-const options = {
+// Add default map options
+const defaultMapOptions = {
   mapTypeId: 'satellite',
+  mapTypeControl: true,
+  mapTypeControlOptions: {
+    position: window.google.maps.ControlPosition.TOP_RIGHT,
+    style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+    mapTypeIds: ['satellite', 'roadmap'],
+  },
+  fullscreenControl: false,
+  streetViewControl: false,
   zoomControl: true,
+  scrollwheel: true,
+  rotateControl: false,
+  tilt: 0,
 };
 
 const MapComponent = ({ address }) => {
@@ -128,8 +140,9 @@ const MapComponent = ({ address }) => {
         mapContainerStyle={responsiveMapStyle}
         center={center}
         zoom={18}
+        mapTypeId="satellite"
+        options={defaultMapOptions}
         onLoad={onMapLoad}
-        options={options}
       >
         <DrawingManager
           onPolygonComplete={onPolygonComplete}

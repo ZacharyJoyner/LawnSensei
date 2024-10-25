@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Stepper, Step, StepLabel, Button } from '@mui/material';
+import { Box, Stepper, Step, StepLabel } from '@mui/material';
 import AddressEntry from './AddressEntry';
 import PropertyView from './PropertyView';
 import LawnPreferences from './LawnPreferences';
@@ -7,13 +7,14 @@ import LawnCareInsights from './LawnCareInsights';
 import AccountCreation from './AccountCreation';
 import OnboardingSummary from './OnboardingSummary';
 
+// Update the steps array to match the correct sequence
 const steps = [
   'Address Entry',
   'Property Mapping',
   'Lawn Preferences',
-  'Lawn Care Insights',
   'Account Creation',
-  'Review & Confirm',
+  'Lawn Care Insights',
+  'Summary'
 ];
 
 const OnboardingStepper = () => {
@@ -27,6 +28,7 @@ const OnboardingStepper = () => {
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
+  // Update the step content sequence
   const getStepContent = (step) => {
     switch (step) {
       case 0:
@@ -36,9 +38,9 @@ const OnboardingStepper = () => {
       case 2:
         return <LawnPreferences handleNext={handleNext} handleBack={handleBack} />;
       case 3:
-        return <LawnCareInsights handleNext={handleNext} handleBack={handleBack} />;
-      case 4:
         return <AccountCreation handleNext={handleNext} handleBack={handleBack} />;
+      case 4:
+        return <LawnCareInsights handleNext={handleNext} handleBack={handleBack} />;
       case 5:
         return <OnboardingSummary handleBack={handleBack} />;
       default:
@@ -57,13 +59,6 @@ const OnboardingStepper = () => {
       </Stepper>
       <Box sx={{ mt: 4, mb: 2 }}>
         {getStepContent(activeStep)}
-      </Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-        {activeStep > 0 && activeStep < steps.length - 1 && (
-          <Button onClick={handleBack} variant="outlined">
-            Back
-          </Button>
-        )}
       </Box>
     </Box>
   );

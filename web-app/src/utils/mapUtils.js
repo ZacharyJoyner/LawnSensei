@@ -49,12 +49,28 @@ export const calculateArea = (path) => {
   return Math.round(area * 10.7639); // Convert to square feet
 };
 
+export const getDefaultMapOptions = () => ({
+  mapTypeId: 'satellite',
+  mapTypeControl: true,
+  mapTypeControlOptions: {
+    position: window.google.maps.ControlPosition.TOP_RIGHT,
+    style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+    mapTypeIds: ['satellite', 'roadmap'],
+  },
+  fullscreenControl: false,
+  streetViewControl: false,
+  zoomControl: true,
+  scrollwheel: true,
+  rotateControl: false,
+  tilt: 0,
+});
+
 export const initializeDrawingManager = (map) => {
   if (!window.google?.maps?.drawing) {
     throw new Error('Google Maps Drawing library not loaded');
   }
 
-  return new window.google.maps.drawing.DrawingManager({
+  const drawingManager = new window.google.maps.drawing.DrawingManager({
     drawingMode: null,
     drawingControl: true,
     drawingControlOptions: {
@@ -70,4 +86,8 @@ export const initializeDrawingManager = (map) => {
       draggable: true,
     },
   });
+
+  map.setMapTypeId('satellite'); // Ensure satellite view on drawing manager init
+  drawingManager.setMap(map);
+  return drawingManager;
 };

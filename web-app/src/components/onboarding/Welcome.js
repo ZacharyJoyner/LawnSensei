@@ -14,7 +14,7 @@ const Welcome = () => {
   });
 
   const handleGetStarted = () => {
-    navigate('/enter-address');
+    navigate('/onboarding');
   };
 
   return (
