@@ -1,24 +1,26 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const auth = require('../middleware/auth');
+const vision = require('@google-cloud/vision');
 
-// Configure multer for file upload
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const client = new vision.ImageAnnotatorClient();
 
-router.post('/', auth, upload.single('file'), async (req, res) => {
+router.post('/upload', async (req, res) => {
   try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
-    }
+    const [result] = await client.labelDetection(req.file.buffer);
+    const weed = result.labelAnnotations.find(label => label.description.toLowerCase().includes('weed'));
 
-    // Here you would typically process the file, perhaps save it to a cloud storage
-    // For now, we'll just send back a success message
-    res.json({ message: 'File uploaded successfully', filename: req.file.originalname });
-  } catch (error) {
-    console.error('Error in file upload:', error);
-    res.status(500).json({ message: 'Error uploading file' });
+    if (weed) {
+      res.json({
+        name: weed.description,
+        description: 'Detailed information about the weed.',
+        affiliateLink: 'https://affiliate-link.com/herbicide',
+      });
+    } else {
+      res.status(404).json({ message: 'Weed not identified.' });
+    }
+  } catch (err) {
+    console.error('Error processing image:', err);
+    res.status(500).json({ message: 'Error processing image.' });
   }
 });
 

@@ -1,20 +1,20 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css';
+import { BrowserRouter } from 'react-router-dom';
 import { OnboardingProvider } from './context/OnboardingContext';
-import reportWebVitals from './reportWebVitals';
+import ErrorBoundary from './components/ErrorBoundary';
 
-const container = document.getElementById('root');
-const root = createRoot(container);
-
+const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <OnboardingProvider>
-      <App />
-    </OnboardingProvider>
+    <ErrorBoundary>
+      <OnboardingProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </OnboardingProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-reportWebVitals();

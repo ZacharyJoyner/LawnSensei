@@ -1,43 +1,32 @@
 {
-  "name": "lawn-sensei-web",
-  "version": "0.1.0",
+  "name": "web-app",
+  "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
+    "@mapbox/mapbox-gl-draw": "^1.4.3",
     "@mui/icons-material": "^5.16.7",
     "@mui/material": "^5.16.7",
     "@react-google-maps/api": "^2.20.3",
-    "@testing-library/jest-dom": "^5.17.0",
-    "@testing-library/react": "^13.4.0",
-    "@testing-library/user-event": "^13.5.0",
+    "@turf/turf": "^7.1.0",
     "axios": "^1.7.7",
-    "date-fns": "^2.30.0",
     "firebase": "^10.14.1",
     "formik": "^2.2.9",
-    "leaflet": "^1.9.4",
-    "leaflet-draw": "^1.0.4",
-    "react": "^18.3.1",
-    "react-big-calendar": "^1.15.0",
-    "react-dom": "^18.3.1",
-    "react-leaflet": "^4.2.1",
-    "react-places-autocomplete": "^7.3.0",
+    "mapbox-gl": "^3.7.0",
+    "react": "^18.2.0",
+    "react-color": "^2.19.3",
+    "react-dom": "^18.2.0",
     "react-router-dom": "^6.27.0",
     "react-scripts": "5.0.1",
     "react-spring": "^9.7.4",
-    "spherical-geometry-js": "^3.0.2",
+    "reactcss": "^1.2.3",
     "use-places-autocomplete": "^4.0.1",
-    "web-vitals": "^2.1.4",
     "yup": "^0.32.11"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "lint": "eslint src/**/*.{js,jsx}",
-    "lint:fix": "eslint src/**/*.{js,jsx} --fix",
-    "format": "prettier --write src/**/*.{js,jsx,css,json}"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -58,11 +47,11 @@
     ]
   },
   "devDependencies": {
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-plugin-prettier": "^5.2.1",
+    "@babel/eslint-parser": "^7.25.8",
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
     "eslint-plugin-react": "^7.37.1",
-    "eslint-plugin-react-hooks": "^5.0.0",
-    "prettier": "^2.8.8"
+    "eslint-plugin-react-hooks": "^5.0.0"
   }
 }

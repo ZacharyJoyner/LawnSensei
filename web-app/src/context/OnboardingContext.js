@@ -1,20 +1,28 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import PropTypes from 'prop-types'; // Ensure PropTypes is imported
 
 const OnboardingContext = createContext();
 
 export const OnboardingProvider = ({ children }) => {
   const [onboardingData, setOnboardingData] = useState({
     address: '',
-    mapCenter: { lat: 40.7128, lng: -74.0060 }, // Default to New York City
+    mapCenter: null,
     sections: [],
     grassType: '',
-    lawnUsage: '',
-    wateringPreference: '',
-    userAccount: {},
+    userPreferences: {
+      healthyLawn: false,
+      pestControl: false,
+      aesthetic: false,
+    },
+    user: null, // User auth details
+    // Add more fields as necessary
   });
 
-  const updateOnboardingData = (updates) => {
-    setOnboardingData((prevData) => ({ ...prevData, ...updates }));
+  const updateOnboardingData = (newData) => {
+    setOnboardingData((prevData) => ({
+      ...prevData,
+      ...newData,
+    }));
   };
 
   return (
@@ -22,6 +30,11 @@ export const OnboardingProvider = ({ children }) => {
       {children}
     </OnboardingContext.Provider>
   );
+};
+
+// Define PropTypes for better type checking
+OnboardingProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export const useOnboarding = () => useContext(OnboardingContext);

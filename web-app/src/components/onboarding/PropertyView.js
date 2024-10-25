@@ -1,211 +1,203 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  Typography,
-  Button,
-  Container,
-  Box,
-  Paper,
-  List,
-  ListItem,
-  ListItemText,
-  IconButton,
-  Alert,
-  CircularProgress,
-} from '@mui/material';
-import { GoogleMap, DrawingManager, Polygon } from '@react-google-maps/api';
+import React, { useEffect, useRef, useState } from 'react';
+import { Typography, Container, Box, Paper, Button, Alert, CircularProgress } from '@mui/material';
 import { useOnboarding } from '../../context/OnboardingContext';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
-import useGoogleMapsScript from '../../hooks/useGoogleMapsScript';
-
-const libraries = ['drawing', 'places', 'geometry'];
-
-const mapContainerStyle = {
-  width: '100%',
-  height: '400px',
-};
-
-const options = {
-  mapTypeId: 'satellite',
-  disableDefaultUI: false,
-  zoomControl: true,
-  scaleControl: true,
-};
 
 const PropertyView = ({ handleNext, handleBack }) => {
   const { onboardingData, updateOnboardingData } = useOnboarding();
   const [sections, setSections] = useState(onboardingData.sections || []);
-  const [activeSection, setActiveSection] = useState(null);
-  const [sectionLabel, setSectionLabel] = useState('');
-  const { isLoaded, loadError } = useGoogleMapsScript(libraries);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const mapRef = useRef(null);
+  const drawingManagerRef = useRef(null);
+  const [map, setMap] = useState(null);
 
-  const calculateArea = (path) => {
-    if (window.google && window.google.maps && window.google.maps.geometry) {
-      return window.google.maps.geometry.spherical.computeArea(path);
+  useEffect(() => {
+    const loadGoogleMaps = async () => {
+      if (!window.google) {
+        try {
+          const googleMapsScript = document.createElement('script');
+          googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&libraries=drawing,geometry`;
+          googleMapsScript.async = true;
+          googleMapsScript.defer = true;
+
+          const loadPromise = new Promise((resolve, reject) => {
+            googleMapsScript.onload = resolve;
+            googleMapsScript.onerror = () => reject(new Error('Failed to load Google Maps'));
+          });
+
+          document.head.appendChild(googleMapsScript);
+          await loadPromise;
+          initializeMap();
+        } catch (err) {
+          console.error('Error loading Google Maps:', err);
+          setError('Failed to load map. Please try again later.');
+          setIsLoading(false);
+        }
+      } else {
+        initializeMap();
+      }
+    };
+
+    const initializeMap = () => {
+      try {
+        const center = onboardingData.mapCenter || { lat: 40.7128, lng: -74.006 };
+        
+        const mapOptions = {
+          center,
+          zoom: 18,
+          mapTypeId: 'satellite',
+          mapTypeControl: false,
+          fullscreenControl: false,
+          streetViewControl: false,
+        };
+
+        const googleMap = new window.google.maps.Map(mapRef.current, mapOptions);
+        setMap(googleMap);
+
+        const drawingManager = new window.google.maps.drawing.DrawingManager({
+          drawingMode: window.google.maps.drawing.OverlayType.POLYGON,
+          drawingControl: true,
+          drawingControlOptions: {
+            position: window.google.maps.ControlPosition.TOP_CENTER,
+            drawingModes: ['polygon'],
+          },
+          polygonOptions: {
+            fillColor: '#FF0000',
+            fillOpacity: 0.4,
+            strokeWeight: 2,
+            editable: true,
+            draggable: true,
+          },
+        });
+
+        drawingManager.setMap(googleMap);
+        drawingManagerRef.current = drawingManager;
+
+        window.google.maps.event.addListener(drawingManager, 'polygoncomplete', (polygon) => {
+          handlePolygonComplete(polygon);
+        });
+
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Error initializing map:', err);
+        setError('Error initializing map. Please refresh the page.');
+        setIsLoading(false);
+      }
+    };
+
+    loadGoogleMaps();
+
+    return () => {
+      if (drawingManagerRef.current) {
+        drawingManagerRef.current.setMap(null);
+      }
+      if (map) {
+        window.google?.maps?.event.clearInstanceListeners(map);
+      }
+    };
+  }, [onboardingData.mapCenter]);
+
+  const handlePolygonComplete = (polygon) => {
+    try {
+      const path = polygon.getPath().getArray().map((latLng) => ({
+        lat: latLng.lat(),
+        lng: latLng.lng(),
+      }));
+
+      const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
+      const areaInSqFt = Math.round(area * 10.7639);
+
+      const label = prompt('Enter a name for this section:', `Section ${sections.length + 1}`);
+      
+      if (label) {
+        const newSection = {
+          id: Date.now().toString(),
+          path,
+          area: areaInSqFt,
+          label: label.trim(),
+        };
+
+        setSections(prevSections => {
+          const updatedSections = [...prevSections, newSection];
+          updateOnboardingData({ sections: updatedSections });
+          return updatedSections;
+        });
+      }
+
+      polygon.setMap(null);
+    } catch (err) {
+      console.error('Error handling polygon:', err);
+      setError('Error creating section. Please try again.');
     }
-    return 0;
   };
 
-  const onMapLoad = useCallback(() => {
-    // Additional map configurations can be added here
-  }, []);
-
-  const onPolygonComplete = useCallback(
-    (polygon) => {
-      const path = polygon.getPath().getArray();
-      const formattedPath = path.map((latLng) => ({ lat: latLng.lat(), lng: latLng.lng() }));
-      const area = calculateArea(polygon.getPath());
-
-      const newSection = {
-        id: Date.now().toString(),
-        path: formattedPath,
-        label: `Section ${sections.length + 1}`,
-        area: Math.round(area * 10.764), // Convert to square feet
-      };
-
-      setSections((prevSections) => [...prevSections, newSection]);
-      updateOnboardingData({ sections: [...sections, newSection] });
-      polygon.setMap(null); // Remove the drawn polygon
-    },
-    [sections, updateOnboardingData]
-  );
-
-  const handleEditSection = (id) => {
-    const section = sections.find((sec) => sec.id === id);
-    if (section) {
-      setActiveSection(id);
-      setSectionLabel(section.label);
+  const navigateNext = () => {
+    if (sections.length === 0) {
+      setError('Please define at least one lawn section before proceeding.');
+      return;
     }
+    handleNext();
   };
-
-  const handleDeleteSection = (id) => {
-    const updatedSections = sections.filter((sec) => sec.id !== id);
-    setSections(updatedSections);
-    updateOnboardingData({ sections: updatedSections });
-  };
-
-  const handleSaveLabel = () => {
-    if (activeSection && sectionLabel) {
-      const updatedSections = sections.map((section) =>
-        section.id === activeSection ? { ...section, label: sectionLabel } : section
-      );
-      setSections(updatedSections);
-      updateOnboardingData({ sections: updatedSections });
-      setActiveSection(null);
-      setSectionLabel('');
-    }
-  };
-
-  if (!isLoaded) {
-    return <CircularProgress />;
-  }
-
-  if (loadError) {
-    return <Alert severity="error">Error loading Google Maps</Alert>;
-  }
 
   return (
     <Container maxWidth="md">
       <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" gutterBottom>
-          Confirm Property Boundary
-        </Typography>
-        <GoogleMap
-          mapContainerStyle={mapContainerStyle}
-          zoom={18}
-          center={onboardingData.mapCenter}
-          options={options}
-          onLoad={onMapLoad}
-        >
-          <DrawingManager
-            onPolygonComplete={onPolygonComplete}
-            options={{
-              drawingControl: true,
-              drawingControlOptions: {
-                position: window.google.maps.ControlPosition.TOP_CENTER,
-                drawingModes: ['polygon'],
-              },
-              polygonOptions: {
-                fillColor: '#2196F3',
-                fillOpacity: 0.2,
-                strokeWeight: 2,
-                clickable: true,
-                editable: true,
-                draggable: true,
-              },
-            }}
+        <Typography variant="h5" gutterBottom>Define Your Property</Typography>
+        <Paper elevation={3} sx={{ p: 2 }}>
+          <Box 
+            ref={mapRef} 
+            sx={{ 
+              height: '500px', 
+              width: '100%',
+              visibility: isLoading ? 'hidden' : 'visible',
+              position: 'relative'
+            }} 
           />
-          {sections.map((section) => (
-            <Polygon
-              key={section.id}
-              paths={section.path}
-              options={{
-                fillColor: '#4CAF50',
-                fillOpacity: 0.2,
-                strokeWeight: 2,
-                clickable: true,
-                editable: false,
-                draggable: false,
-              }}
-              onClick={() => setActiveSection(section.id)}
-            />
-          ))}
-        </GoogleMap>
-        <Paper elevation={3} sx={{ p: 2, mb: 2, mt: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Lawn Sections
-          </Typography>
-          <List>
-            {sections.map((section) => (
-              <ListItem
-                key={section.id}
-                secondaryAction={
-                  <>
-                    <IconButton edge="end" aria-label="edit" onClick={() => handleEditSection(section.id)}>
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton edge="end" aria-label="delete" onClick={() => handleDeleteSection(section.id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </>
-                }
-              >
-                <ListItemText primary={section.label} secondary={`Area: ${section.area} sq ft`} />
-              </ListItem>
-            ))}
-          </List>
-          {sections.length > 0 && (
-            <Typography variant="subtitle1" sx={{ mt: 2 }}>
-              Total Lawn Area: {sections.reduce((acc, section) => acc + parseFloat(section.area), 0).toFixed(2)} sq ft
-            </Typography>
+          
+          {isLoading && (
+            <Box sx={{ 
+              height: '500px', 
+              width: '100%',
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0
+            }}>
+              <CircularProgress />
+              <Typography sx={{ ml: 2 }}>Loading map...</Typography>
+            </Box>
           )}
-        </Paper>
-        {activeSection && (
-          <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
-            <Typography variant="h6" gutterBottom>
-              Edit Section Label
+
+          {error && (
+            <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+          )}
+
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="textSecondary">
+              Draw sections of your lawn by clicking points on the map. Double-click to complete a section.
             </Typography>
-            <TextField
-              fullWidth
-              label="Section Label"
-              value={sectionLabel}
-              onChange={(e) => setSectionLabel(e.target.value)}
-              sx={{ mb: 2 }}
-              helperText="Enter a descriptive label for the section."
-            />
-            <Button variant="contained" color="primary" onClick={handleSaveLabel} aria-label="Save Label">
-              Save Label
+          </Box>
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2 }}>
+            <Button 
+              variant="outlined" 
+              onClick={handleBack}
+            >
+              Back
             </Button>
-          </Paper>
-        )}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-          <Button variant="outlined" color="secondary" onClick={handleBack} aria-label="Back">
-            Back
-          </Button>
-          <Button variant="contained" color="primary" onClick={handleNext} aria-label="Next">
-            Next
-          </Button>
-        </Box>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={navigateNext}
+              disabled={isLoading || sections.length === 0}
+            >
+              Next
+            </Button>
+          </Box>
+        </Paper>
       </Box>
     </Container>
   );

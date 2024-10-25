@@ -1,31 +1,35 @@
 import { useState, useEffect } from 'react';
 
-const useGoogleMapsScript = (libraries = []) => {
+export const useGoogleMapsScript = ({ googleMapsApiKey, libraries = [] }) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
-    // Check if the script is already loaded
-    if (window.google && window.google.maps) {
-      setIsLoaded(true);
+    if (!googleMapsApiKey) {
+      setLoadError(new Error('Google Maps API key is missing.'));
       return;
     }
 
-    // Create script element
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=${libraries.join(',')}`;
-    script.async = true; // Ensure async loading
-    script.defer = true;  // Optional: defer execution
-    script.onload = () => setIsLoaded(true);
-    script.onerror = () => setLoadError(true);
+    // Ensure 'places' library is included
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=${libraries.join(',')}`;
+    script.async = true;
+    script.defer = true;
 
-    document.head.appendChild(script);
+    const onScriptLoad = () => setIsLoaded(true);
+    const onScriptError = () => setLoadError(new Error('Failed to load Google Maps script.'));
 
-    // Cleanup function to remove script
+    script.addEventListener('load', onScriptLoad);
+    script.addEventListener('error', onScriptError);
+
+    document.body.appendChild(script);
+
     return () => {
-      document.head.removeChild(script);
+      script.removeEventListener('load', onScriptLoad);
+      script.removeEventListener('error', onScriptError);
+      document.body.removeChild(script);
     };
-  }, [libraries]);
+  }, [googleMapsApiKey, libraries]);
 
   return { isLoaded, loadError };
 };

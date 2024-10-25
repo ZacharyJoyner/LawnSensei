@@ -1,35 +1,27 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import ErrorBoundary from './components/ErrorBoundary';
-import { OnboardingProvider } from './context/OnboardingContext';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress } from '@mui/material';
+import OnboardingStepper from './components/onboarding/OnboardingStepper';
+import OnboardingSummary from './components/onboarding/OnboardingSummary'; // Ensure this import is correct
 
+// Lazy-loaded components
 const Welcome = lazy(() => import('./components/onboarding/Welcome'));
-const Onboarding = lazy(() => import('./components/onboarding/Onboarding'));
-const Review = lazy(() => import('./components/onboarding/Review'));
-const UserAccount = lazy(() => import('./components/onboarding/UserAccount'));
-const LawnRecommendations = lazy(() => import('./components/LawnRecommendations'));
-const LawnRecommendationsDashboard = lazy(() => import('./components/LawnRecommendationsDashboard'));
+const PropertyView = lazy(() => import('./components/onboarding/PropertyView'));
+const Dashboard = lazy(() => import('./components/Dashboard'));
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <OnboardingProvider>
-        <Router>
-          <Suspense fallback={<CircularProgress />}>
-            <Routes>
-              <Route path="/" element={<Welcome />} />
-              <Route path="/onboarding/*" element={<Onboarding />} />
-              <Route path="/review" element={<Review />} />
-              <Route path="/account" element={<UserAccount />} />
-              <Route path="/recommendations" element={<LawnRecommendations />} />
-              <Route path="/dashboard" element={<LawnRecommendationsDashboard />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </Router>
-      </OnboardingProvider>
-    </ErrorBoundary>
+    <Suspense fallback={<CircularProgress />}>
+      <Routes>
+        <Route path="/" element={<Welcome />} />
+        <Route path="/enter-address" element={<OnboardingStepper />} />
+        <Route path="/property-view" element={<PropertyView />} />
+        <Route path="/onboarding-summary" element={<OnboardingSummary />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        {/* Redirect unknown routes to Welcome */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 };
 

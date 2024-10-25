@@ -4,7 +4,7 @@ const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const auth = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth'); // Ensure correct path and naming
 
 /**
  * @swagger
@@ -176,7 +176,7 @@ router.post(
  *       401:
  *         description: Not authorized
  */
-router.get('/user', auth, async (req, res) => {
+router.get('/user', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);
@@ -186,7 +186,7 @@ router.get('/user', auth, async (req, res) => {
   }
 });
 
-router.get('/user-profile', auth, async (req, res) => {
+router.get('/user-profile', authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     res.json(user);

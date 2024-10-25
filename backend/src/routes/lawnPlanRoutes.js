@@ -1,34 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
-const LawnPlan = require('../models/LawnPlan');
+const LawnPlanController = require('../controllers/LawnPlanController');
+const authenticate = require('../middleware/authenticate');
 
 // Create a new lawn plan
-router.post('/', auth, async (req, res) => {
-  try {
-    const newLawnPlan = new LawnPlan({
-      userId: req.user.id,
-      ...req.body
-    });
-    const lawnPlan = await newLawnPlan.save();
-    res.json(lawnPlan);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
+router.post('/', authenticate, LawnPlanController.createLawnPlan);
 
 // Get all lawn plans for a user
-router.get('/', auth, async (req, res) => {
-  try {
-    const lawnPlans = await LawnPlan.find({ userId: req.user.id });
-    res.json(lawnPlans);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
+router.get('/', authenticate, LawnPlanController.getLawnPlans);
 
-// Add more routes as needed (update, delete, etc.)
+// Update a lawn plan
+router.put('/:id', authenticate, LawnPlanController.updateLawnPlan);
+
+// Delete a lawn plan
+router.delete('/:id', authenticate, LawnPlanController.deleteLawnPlan);
 
 module.exports = router;

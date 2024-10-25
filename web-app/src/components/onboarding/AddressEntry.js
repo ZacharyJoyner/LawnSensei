@@ -1,88 +1,98 @@
-import React, { useState, useEffect } from 'react';
-import { Typography, TextField, Container, Box, Button, CircularProgress, Alert, Paper } from '@mui/material';
+import React, { useState, useRef } from 'react';
+import { Typography, Container, Box, TextField, Button, IconButton, InputAdornment } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { useLoadScript, GoogleMap, Marker } from '@react-google-maps/api';
+import { Autocomplete } from '@react-google-maps/api';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { GoogleMap } from '@react-google-maps/api';
-import usePlacesAutocomplete, { getGeocode, getLatLng } from 'use-places-autocomplete';
-import useGoogleMapsScript from '../../hooks/useGoogleMapsScript';
 
-const AddressEntry = ({ handleNext }) => { // Accept handleNext as a prop
+const libraries = ['places'];
+const containerStyle = {
+  width: '100%',
+  height: '400px',
+};
+const defaultCenter = {
+  lat: 40.7128,
+  lng: -74.0060, // Default to New York City
+};
+
+const AddressEntry = () => {
+  const navigate = useNavigate();
   const { onboardingData, updateOnboardingData } = useOnboarding();
-  const [mapCenter, setMapCenter] = useState(onboardingData.mapCenter || { lat: 40.7128, lng: -74.0060 }); // Default to New York City
-  const [selectedAddress, setSelectedAddress] = useState(onboardingData.address || '');
+  const [address, setAddress] = useState(onboardingData.address || '');
+  const [mapCenter, setMapCenter] = useState(onboardingData.mapCenter || defaultCenter);
   const [error, setError] = useState(null);
-  const [helperText, setHelperText] = useState('');
+  const autocompleteRef = useRef(null);
 
-  const { isLoaded, loadError } = useGoogleMapsScript(['places']);
-
-  const {
-    ready,
-    value,
-    suggestions: { status, data },
-    setValue,
-    clearSuggestions,
-  } = usePlacesAutocomplete({
-    requestOptions: {
-      types: ['address'],
-    },
-    debounce: 300,
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY, // Ensure this key is set in .env
+    libraries,
   });
 
-  const handleInput = (e) => {
-    setValue(e.target.value);
-    setSelectedAddress(''); // Reset selected address when typing
-    setHelperText('Please select an address from the suggestions.');
+  const onLoad = (autocomplete) => {
+    autocompleteRef.current = autocomplete;
   };
 
-  const handleSelect = async (address) => {
-    setError(null); // Reset error state
-    setValue(address, false);
-    clearSuggestions();
-    setSelectedAddress(address);
-
-    try {
-      const results = await getGeocode({ address });
-      const { lat, lng } = await getLatLng(results[0]);
-      setMapCenter({ lat, lng });
-      updateOnboardingData({ address, mapCenter: { lat, lng } });
-      setHelperText('Address selected successfully.');
-    } catch (error) {
-      console.error('Error:', error);
-      setError('Failed to fetch location data. Please try again.');
-      setHelperText('');
-    }
-  };
-
-  const handleNextClick = () => {
-    if (selectedAddress) {
-      handleNext(); // Proceed to the next step
-    } else {
-      setError('Please select a valid address before proceeding.');
-    }
-  };
-
-  // Custom Advanced Marker Component using AdvancedMarkerElement
-  const AdvancedMarker = ({ position, title }) => {
-    useEffect(() => {
-      if (window.google && window.google.maps && window.google.maps.marker) {
-        const marker = new window.google.maps.marker.AdvancedMarkerElement({
-          position,
-          map: null, // Initially not added to the map
-          title,
+  const onPlaceChanged = () => {
+    if (autocompleteRef.current !== null) {
+      const place = autocompleteRef.current.getPlace();
+      if (place.geometry) {
+        setMapCenter({
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
         });
-
-        marker.setMap(window.google.maps.Map);
-
-        return () => {
-          marker.setMap(null);
-        };
+        setAddress(place.formatted_address);
+      } else {
+        setError('No details available for input: \'' + place.name + '\'');
       }
-    }, [position, title]);
-
-    return null; // This component does not render anything itself
+    } else {
+      console.log('Autocomplete is not loaded yet!');
+    }
   };
 
-  if (loadError) return <Alert severity="error">Error loading maps</Alert>;
-  if (!isLoaded) return <CircularProgress />;
+  const handleCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newCenter = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMapCenter(newCenter);
+          // Reverse geocode to get address
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: newCenter }, (results, status) => {
+            if (status === 'OK') {
+              if (results[0]) {
+                setAddress(results[0].formatted_address);
+              } else {
+                setError('No results found');
+              }
+            } else {
+              setError('Geocoder failed due to: ' + status);
+            }
+          });
+        },
+        () => {
+          setError('Failed to fetch current location.');
+        }
+      );
+    } else {
+      setError('Geolocation is not supported by this browser.');
+    }
+  };
+
+  const handleNext = () => {
+    if (!address) {
+      setError('Please enter your address to proceed.');
+      return;
+    }
+    updateOnboardingData({ address, mapCenter });
+    navigate('/property-view');
+  };
+
+  if (loadError) return <div>Error loading maps</div>;
+  if (!isLoaded) return <div>Loading maps</div>;
 
   return (
     <Container maxWidth="sm">
@@ -90,63 +100,37 @@ const AddressEntry = ({ handleNext }) => { // Accept handleNext as a prop
         <Typography variant="h5" gutterBottom>
           Enter Your Address
         </Typography>
-        <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
+        <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
           <TextField
             label="Address"
-            value={value}
-            onChange={handleInput}
-            disabled={!ready}
-            fullWidth
             variant="outlined"
-            placeholder="Enter your address"
-            aria-label="Address"
-            helperText={helperText}
+            fullWidth
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={handleCurrentLocation} aria-label="Use Current Location">
+                    <MyLocationIcon />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+            aria-label="Address Input"
           />
-          {status === 'OK' && (
-            <Box sx={{ border: '1px solid #ccc', borderRadius: '4px', mt: 1, maxHeight: '200px', overflowY: 'auto' }}>
-              {data.map(({ place_id, description }) => (
-                <Box
-                  key={place_id}
-                  onClick={() => handleSelect(description)}
-                  sx={{ padding: '8px', cursor: 'pointer', '&:hover': { backgroundColor: '#f0f0f0' } }}
-                  tabIndex={0}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') handleSelect(description);
-                  }}
-                  aria-label={`Select address: ${description}`}
-                >
-                  {description}
-                </Box>
-              ))}
-            </Box>
-          )}
-          {error && (
-            <Alert severity="error" sx={{ mt: 2 }}>
-              {error}
-            </Alert>
-          )}
-        </Paper>
-        <Typography variant="body2" color="textSecondary" gutterBottom sx={{ mt: 2 }}>
-          Don&apos;t worry, you can always edit this later.
-        </Typography>
-        <GoogleMap
-          mapContainerStyle={{
-            width: '100%',
-            height: '300px',
-            marginTop: '20px',
-          }}
-          zoom={14}
-          center={mapCenter}
-          options={{
-            disableDefaultUI: true,
-            zoomControl: true,
-          }}
-          onLoad={() => {}} // Optional: Add if you need to perform actions on map load
-        >
-          <AdvancedMarker position={mapCenter} title={selectedAddress} />
-        </GoogleMap>
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
-          <Button variant="contained" color="primary" onClick={handleNextClick} aria-label="Next">
+        </Autocomplete>
+        {error && (
+          <Typography color="error" sx={{ mt: 1 }}>
+            {error}
+          </Typography>
+        )}
+        <Box sx={{ mt: 4 }}>
+          <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={15}>
+            <Marker position={mapCenter} />
+          </GoogleMap>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+          <Button variant="contained" color="primary" onClick={handleNext} aria-label="Next">
             Next
           </Button>
         </Box>

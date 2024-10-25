@@ -1,7 +1,7 @@
 import React from 'react';
 import { LoadScript } from '@react-google-maps/api';
 
-const libraries = ['places', 'drawing', 'geometry'];
+const libraries = ['drawing', 'geometry', 'places'];
 
 export const GoogleMapsWrapper = ({ children }) => {
   return (
