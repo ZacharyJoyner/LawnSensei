@@ -8,15 +8,13 @@ import SectionDrawing from './SectionDrawing';
 import Review from './Review';
 
 const Onboarding = () => {
-  const googleMapsApiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
-
   return (
     <GoogleMapsWrapper>
       <Routes>
         <Route path="/" element={<Welcome />} />
-        <Route path="/address" element={<AddressEntry googleMapsApiKey={googleMapsApiKey} />} />
-        <Route path="/property" element={<PropertyView googleMapsApiKey={googleMapsApiKey} />} />
-        <Route path="/sections" element={<SectionDrawing googleMapsApiKey={googleMapsApiKey} />} />
+        <Route path="/address" element={<AddressEntry />} />
+        <Route path="/property" element={<PropertyView />} />
+        <Route path="/sections" element={<SectionDrawing />} />
         <Route path="/review" element={<Review />} />
       </Routes>
     </GoogleMapsWrapper>
