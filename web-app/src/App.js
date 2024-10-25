@@ -2,7 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress } from '@mui/material';
 import OnboardingStepper from './components/onboarding/OnboardingStepper';
-import OnboardingSummary from './components/onboarding/OnboardingSummary'; // Ensure this import is correct
+import OnboardingSummary from './components/onboarding/OnboardingSummary';
 
 // Lazy-loaded components
 const Welcome = lazy(() => import('./components/onboarding/Welcome'));
@@ -18,7 +18,6 @@ const App = () => {
         <Route path="/property-view" element={<PropertyView />} />
         <Route path="/onboarding-summary" element={<OnboardingSummary />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        {/* Redirect unknown routes to Welcome */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

@@ -68,3 +68,32 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Google Maps Integration Checklist
+
+Before deploying:
+
+1. Enable required APIs in Google Cloud Console:
+   - Maps JavaScript API
+   - Drawing Library
+   - Geometry Library
+   - Places API
+
+2. Configure API key restrictions:
+   - Add authorized domains
+   - Add IP address restrictions if needed
+   - Enable billing
+   - Set quotas and budgets
+
+3. Test drawing functionality:
+   - Polygon creation
+   - Editing vertices
+   - Dragging polygons
+   - Area calculation
+   - Label management
+
+4. Verify error handling:
+   - API loading errors
+   - Drawing tool initialization
+   - Invalid polygon creation
+   - Network connectivity issues

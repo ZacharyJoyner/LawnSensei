@@ -1,185 +1,105 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { Typography, Container, Box, Paper, Button, Alert, CircularProgress, List, ListItem, ListItemText, IconButton } from '@mui/material';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Typography, Container, Box, Paper, Button, Alert, CircularProgress, List, ListItem, ListItemText, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { GoogleMap, Polygon } from '@react-google-maps/api';
+import { GoogleMap, Polygon, OverlayView } from '@react-google-maps/api';
+import { useGoogleMaps } from '../../hooks/useGoogleMaps';
 
 const mapContainerStyle = {
-  height: '500px',
   width: '100%',
+  height: '400px',
 };
 
 const PropertyView = ({ handleNext, handleBack }) => {
   const { onboardingData, updateOnboardingData } = useOnboarding();
   const [sections, setSections] = useState(onboardingData.sections || []);
   const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const drawingManagerRef = useRef(null);
   const polygonsRef = useRef({});
-  const mapRef = useRef(null);
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [tempPolygon, setTempPolygon] = useState(null);
+  const [newSectionLabel, setNewSectionLabel] = useState('');
+  const [selectedSection, setSelectedSection] = useState(null);
 
   const center = onboardingData.mapCenter || { lat: 40.7128, lng: -74.006 };
 
-  // Update polygon area when edited
-  const updatePolygonArea = useCallback((id, polygon) => {
-    const area = window.google.maps.geometry.spherical.computeArea(polygon.getPath());
-    const areaInSqFt = Math.round(area * 10.7639);
-
-    setSections(prevSections => {
-      const updatedSections = prevSections.map(section => {
-        if (section.id === id) {
-          return {
-            ...section,
-            area: areaInSqFt,
-            path: polygon.getPath().getArray().map(latLng => ({
-              lat: latLng.lat(),
-              lng: latLng.lng(),
-            })),
-          };
-        }
-        return section;
-      });
-      updateOnboardingData({ sections: updatedSections });
-      return updatedSections;
-    });
-  }, [updateOnboardingData]);
-
-  // Handle polygon completion
-  const handlePolygonComplete = useCallback((polygon) => {
+  // Update polygon paths and area when edited
+  const handlePolygonEdit = useCallback((id, polygon) => {
     try {
       const path = polygon.getPath();
       const area = window.google.maps.geometry.spherical.computeArea(path);
       const areaInSqFt = Math.round(area * 10.7639);
 
-      const label = `Section ${sections.length + 1}`;
-      const id = Date.now().toString();
-
-      const newSection = {
-        id,
-        path: path.getArray().map(latLng => ({
-          lat: latLng.lat(),
-          lng: latLng.lng(),
-        })),
-        area: areaInSqFt,
-        label,
-      };
-
-      // Add path change listeners
-      window.google.maps.event.addListener(path, 'set_at', () => updatePolygonArea(id, polygon));
-      window.google.maps.event.addListener(path, 'insert_at', () => updatePolygonArea(id, polygon));
-      window.google.maps.event.addListener(path, 'remove_at', () => updatePolygonArea(id, polygon));
-
-      polygonsRef.current[id] = polygon;
-
       setSections(prevSections => {
-        const updatedSections = [...prevSections, newSection];
-        updateOnboardingData({ sections: updatedSections });
-        return updatedSections;
-      });
-
-      // Reset drawing mode after completion
-      if (drawingManagerRef.current) {
-        drawingManagerRef.current.setDrawingMode(null);
-      }
-    } catch (err) {
-      console.error('Error handling polygon:', err);
-      setError('Error creating section. Please try again.');
-    }
-  }, [sections, updateOnboardingData, updatePolygonArea]);
-
-  const onMapLoad = useCallback((map) => {
-    try {
-      mapRef.current = map;
-      
-      // Wait for Google Maps libraries to be fully loaded
-      const initializeDrawingManager = () => {
-        if (!window.google?.maps?.drawing) {
-          setTimeout(initializeDrawingManager, 100);
-          return;
-        }
-
-        const drawingManager = new window.google.maps.drawing.DrawingManager({
-          drawingControl: true,
-          drawingControlOptions: {
-            position: window.google.maps.ControlPosition.TOP_CENTER,
-            drawingModes: ['polygon'],
-          },
-          polygonOptions: {
-            fillColor: '#FF0000',
-            fillOpacity: 0.3,
-            strokeWeight: 2,
-            strokeColor: '#FF0000',
-            editable: true,
-            draggable: true,
-            clickable: true,
-          },
+        const updatedSections = prevSections.map(section => {
+          if (section.id === id) {
+            return {
+              ...section,
+              area: areaInSqFt,
+              path: path.getArray().map(latLng => ({
+                lat: latLng.lat(),
+                lng: latLng.lng(),
+              })),
+            };
+          }
+          return section;
         });
-
-        drawingManager.setMap(map);
-        drawingManagerRef.current = drawingManager;
-        
-        // Add polygon complete listener
-        window.google.maps.event.addListener(
-          drawingManager, 
-          'polygoncomplete', 
-          handlePolygonComplete
-        );
-        
-        setIsLoading(false);
-      };
-
-      initializeDrawingManager();
-    } catch (err) {
-      console.error('Error initializing map:', err);
-      setError('Error initializing map tools. Please refresh the page.');
-      setIsLoading(false);
-    }
-  }, [handlePolygonComplete]);
-
-  // Modified startDrawing function
-  const startDrawing = useCallback(() => {
-    if (!drawingManagerRef.current || !window.google?.maps?.drawing) {
-      setError('Drawing tools not initialized. Please wait or refresh the page.');
-      return;
-    }
-
-    try {
-      drawingManagerRef.current.setDrawingMode('polygon');
-      setError(null);
-    } catch (err) {
-      console.error('Error starting drawing mode:', err);
-      setError('Failed to start drawing mode. Please try again.');
-    }
-  }, []);
-
-  // Delete a section
-  const handleDeleteSection = useCallback((id) => {
-    if (polygonsRef.current[id]) {
-      polygonsRef.current[id].setMap(null);
-      delete polygonsRef.current[id];
-    }
-
-    setSections(prevSections => {
-      const updatedSections = prevSections.filter(section => section.id !== id);
-      updateOnboardingData({ sections: updatedSections });
-      return updatedSections;
-    });
-  }, [updateOnboardingData]);
-
-  // Edit section label
-  const handleEditLabel = useCallback((id) => {
-    const newLabel = prompt('Enter new label for this section:');
-    if (newLabel?.trim()) {
-      setSections(prevSections => {
-        const updatedSections = prevSections.map(section => 
-          section.id === id ? { ...section, label: newLabel.trim() } : section
-        );
         updateOnboardingData({ sections: updatedSections });
         return updatedSections;
       });
+    } catch (error) {
+      console.error('Error updating polygon:', error);
+      setError('Failed to update section. Please try again.');
     }
   }, [updateOnboardingData]);
+
+  // Add polygon edit listeners
+  const addPolygonListeners = useCallback((polygon, sectionId) => {
+    ['set_at', 'insert_at', 'remove_at'].forEach(event => {
+      window.google.maps.event.addListener(
+        polygon.getPath(), 
+        event, 
+        () => handlePolygonEdit(sectionId, polygon)
+      );
+    });
+  }, [handlePolygonEdit]);
+
+  // Handle polygon completion
+  const handlePolygonComplete = useCallback((polygon) => {
+    try {
+      setTempPolygon(polygon);
+      setNewSectionLabel(`Section ${sections.length + 1}`);
+      setLabelDialogOpen(true);
+      
+      // Add edit listeners to the new polygon
+      addPolygonListeners(polygon, Date.now().toString());
+    } catch (error) {
+      console.error('Error creating polygon:', error);
+      setError('Failed to create lawn section. Please try again.');
+      if (polygon) {
+        polygon.setMap(null);
+      }
+    }
+  }, [sections.length, addPolygonListeners]);
+
+  // Use the Google Maps hook with all necessary values
+  const {
+    error: mapError,
+    isDrawing,
+    onMapLoad,
+    startDrawing,
+    stopDrawing,
+    isLoaded,
+    loadError,
+  } = useGoogleMaps(handlePolygonComplete);
+
+  // Update error handling
+  useEffect(() => {
+    if (mapError) {
+      console.error('Map Error:', mapError);
+      setError(mapError);
+    }
+  }, [mapError]);
 
   // Navigation validation
   const handleNextStep = () => {
@@ -218,12 +138,178 @@ const PropertyView = ({ handleNext, handleBack }) => {
         variant="contained" 
         color="primary" 
         onClick={startDrawing}
+        disabled={isDrawing}
         sx={{ mt: 2 }}
       >
-        Start Drawing
+        {isDrawing ? 'Drawing...' : 'Start Drawing'}
       </Button>
+      {isDrawing && (
+        <Button 
+          variant="outlined" 
+          onClick={stopDrawing}
+          sx={{ mt: 2, ml: 2 }}
+        >
+          Cancel Drawing
+        </Button>
+      )}
     </Box>
   );
+
+  // Add label dialog component
+  const renderLabelDialog = () => (
+    <Dialog open={labelDialogOpen} onClose={() => {
+      setLabelDialogOpen(false);
+      if (tempPolygon) {
+        tempPolygon.setMap(null);
+      }
+      setTempPolygon(null);
+      setSelectedSection(null);
+    }}>
+      <DialogTitle>
+        {selectedSection ? 'Edit Section Label' : 'Label Your Lawn Section'}
+      </DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          margin="dense"
+          label="Section Label"
+          fullWidth
+          variant="outlined"
+          value={newSectionLabel}
+          onChange={(e) => setNewSectionLabel(e.target.value)}
+          helperText="Enter a descriptive name for this section (e.g., 'Front Yard', 'Back Garden')"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => {
+          setLabelDialogOpen(false);
+          if (tempPolygon) {
+            tempPolygon.setMap(null);
+          }
+          setTempPolygon(null);
+          setSelectedSection(null);
+        }}>
+          Cancel
+        </Button>
+        <Button onClick={createSectionWithLabel} variant="contained" color="primary">
+          Save
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // Handle editing section label
+  const handleEditLabel = useCallback((sectionId) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (section) {
+      setNewSectionLabel(section.label);
+      setSelectedSection(section);
+      setLabelDialogOpen(true);
+    }
+  }, [sections]);
+
+  // Handle deleting a section
+  const handleDeleteSection = useCallback((sectionId) => {
+    try {
+      // Remove the polygon from the map
+      if (polygonsRef.current[sectionId]) {
+        polygonsRef.current[sectionId].setMap(null);
+        delete polygonsRef.current[sectionId];
+      }
+
+      // Update sections state
+      setSections(prevSections => {
+        const updatedSections = prevSections.filter(section => section.id !== sectionId);
+        updateOnboardingData({ sections: updatedSections });
+        return updatedSections;
+      });
+    } catch (error) {
+      console.error('Error deleting section:', error);
+      setError('Failed to delete section. Please try again.');
+    }
+  }, [updateOnboardingData]);
+
+  // Add createSectionWithLabel function
+  const createSectionWithLabel = useCallback(() => {
+    if (!newSectionLabel.trim()) return;
+
+    try {
+      if (selectedSection) {
+        // Editing existing section
+        setSections(prevSections => {
+          const updatedSections = prevSections.map(section => 
+            section.id === selectedSection.id 
+              ? { ...section, label: newSectionLabel.trim() }
+              : section
+          );
+          updateOnboardingData({ sections: updatedSections });
+          return updatedSections;
+        });
+      } else if (tempPolygon) {
+        // Creating new section
+        const path = tempPolygon.getPath();
+        const area = window.google.maps.geometry.spherical.computeArea(path);
+        const areaInSqFt = Math.round(area * 10.7639);
+
+        const newSection = {
+          id: Date.now().toString(),
+          path: path.getArray().map(latLng => ({
+            lat: latLng.lat(),
+            lng: latLng.lng(),
+          })),
+          area: areaInSqFt,
+          label: newSectionLabel.trim(),
+          center: {
+            lat: path.getArray().reduce((sum, point) => sum + point.lat(), 0) / path.getLength(),
+            lng: path.getArray().reduce((sum, point) => sum + point.lng(), 0) / path.getLength(),
+          },
+        };
+
+        polygonsRef.current[newSection.id] = tempPolygon;
+        setSections(prev => {
+          const updatedSections = [...prev, newSection];
+          updateOnboardingData({ sections: updatedSections });
+          return updatedSections;
+        });
+      }
+
+      // Reset states
+      setTempPolygon(null);
+      setNewSectionLabel('');
+      setSelectedSection(null);
+      setLabelDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving section:', error);
+      setError('Failed to save section. Please try again.');
+    }
+  }, [tempPolygon, newSectionLabel, selectedSection, updateOnboardingData]);
+
+  // Remove the separate loading check since we're using isLoaded from useGoogleMaps
+  if (loadError) {
+    return (
+      <Container maxWidth="md">
+        <Alert severity="error" sx={{ mt: 4 }}>
+          Error loading Google Maps: {loadError.message}
+        </Alert>
+      </Container>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '400px' 
+        }}>
+          <CircularProgress />
+          <Typography sx={{ ml: 2 }}>Loading Google Maps...</Typography>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md">
@@ -248,38 +334,46 @@ const PropertyView = ({ handleNext, handleBack }) => {
             onLoad={onMapLoad}
           >
             {sections.map((section) => (
-              <Polygon
-                key={section.id}
-                paths={section.path}
-                options={{
-                  fillColor: '#FF0000',
-                  fillOpacity: 0.3,
-                  strokeWeight: 2,
-                  strokeColor: '#FF0000',
-                  editable: true,
-                  draggable: true,
-                }}
-              />
+              <React.Fragment key={section.id}>
+                <Polygon
+                  paths={section.path}
+                  options={{
+                    fillColor: '#FF0000',
+                    fillOpacity: 0.3,
+                    strokeWeight: 2,
+                    strokeColor: '#FF0000',
+                    editable: true,
+                    draggable: true,
+                  }}
+                  onClick={() => setSelectedSection(section)}
+                />
+                {/* Add label overlay */}
+                {section.center && (
+                  <OverlayView
+                    position={section.center}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                  >
+                    <div
+                      style={{
+                        background: 'white',
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                        border: '1px solid #ccc',
+                        fontSize: '14px',
+                        transform: 'translate(-50%, -50%)',
+                      }}
+                    >
+                      {section.label}
+                      <br />
+                      {section.area} sq ft
+                    </div>
+                  </OverlayView>
+                )}
+              </React.Fragment>
             ))}
           </GoogleMap>
           
-          {isLoading && (
-            <Box sx={{ 
-              height: '500px', 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            }}>
-              <CircularProgress />
-              <Typography sx={{ ml: 2 }}>Loading map...</Typography>
-            </Box>
-          )}
-
           {error && (
             <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
           )}
@@ -330,13 +424,14 @@ const PropertyView = ({ handleNext, handleBack }) => {
               variant="contained" 
               color="primary" 
               onClick={handleNextStep}
-              disabled={isLoading || sections.length === 0}
+              disabled={!isLoaded || sections.length === 0}
             >
               Next
             </Button>
           </Box>
         </Paper>
       </Box>
+      {renderLabelDialog()}
     </Container>
   );
 };
