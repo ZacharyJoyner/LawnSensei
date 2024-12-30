@@ -7,8 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Onboarding from './components/onboarding/Onboarding';
 import AddressEntry from './components/onboarding/AddressEntry';
 import PropertyView from './components/onboarding/PropertyView';
-import SectionDrawing from './components/onboarding/SectionDrawing';
 import Review from './components/onboarding/Review';
+import AccountCreation from './components/onboarding/AccountCreation';
 import './App.css';
 
 const theme = createTheme({
@@ -41,8 +41,8 @@ const App = () => {
         <Route path="/onboarding" element={<Onboarding />}>
           <Route index element={<AddressEntry />} />
           <Route path="property" element={<PropertyView />} />
-          <Route path="sections" element={<SectionDrawing />} />
           <Route path="review" element={<Review />} />
+          <Route path="account" element={<AccountCreation />} />
         </Route>
         <Route
           path="/dashboard"

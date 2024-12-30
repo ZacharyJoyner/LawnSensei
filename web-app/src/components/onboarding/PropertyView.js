@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Typography,
   Container,
@@ -10,6 +10,12 @@ import {
   ListItem,
   ListItemText,
   IconButton,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  CircularProgress,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -21,26 +27,117 @@ import { useNavigate } from 'react-router-dom';
 const PropertyView = () => {
   const navigate = useNavigate();
   const { onboardingData, updateOnboardingData } = useOnboarding();
-  const [sections, setSections] = useState([]);
+  const [sections, setSections] = useState(onboardingData.sections || []);
+  const [validationError, setValidationError] = useState('');
   const {
-    error,
+    error: sectionError,
     editLabel,
     setEditLabel,
     isEditing,
+    setIsEditing,
     handlePolygonComplete,
     handleEditLabel,
     handleSaveLabel,
     handleDeleteSection,
   } = useSectionManager();
 
+  // Dialog state for editing labels
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedSection, setSelectedSection] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Initialize sections from onboarding data only once
+  useEffect(() => {
+    if (onboardingData.sections) {
+      setSections(onboardingData.sections);
+    }
+  }, []); // Empty dependency array means this runs once on mount
+
+  // Debounced update to onboarding context
+  const debouncedUpdateOnboarding = useCallback(
+    (newSections) => {
+      const timeoutId = setTimeout(() => {
+        updateOnboardingData({ sections: newSections });
+      }, 500); // 500ms delay
+
+      return () => clearTimeout(timeoutId);
+    },
+    [updateOnboardingData]
+  );
+
+  // Update onboarding context when sections change
+  useEffect(() => {
+    if (sections.length > 0) {
+      return debouncedUpdateOnboarding(sections);
+    }
+  }, [sections, debouncedUpdateOnboarding]);
+
   const handleNext = () => {
-    // Save sections to onboarding context before navigating
+    if (sections.length === 0) {
+      setValidationError('Please create at least one lawn section before proceeding');
+      return;
+    }
+    setValidationError('');
+    // Ensure sections are saved before navigating
     updateOnboardingData({ sections });
-    navigate('/onboarding/sections');
+    navigate('/onboarding/review');
   };
 
   const handleBack = () => {
-    navigate('/onboarding');
+    if (isEditing) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to go back?')) {
+        setIsEditing(false);
+        navigate('/onboarding');
+      }
+    } else {
+      navigate('/onboarding');
+    }
+  };
+
+  const openEditDialog = (section) => {
+    setSelectedSection(section);
+    setEditLabel(section.label);
+    handleEditLabel(section.id);
+    setEditDialogOpen(true);
+    setIsEditing(true);
+  };
+
+  const handleSaveNewLabel = async () => {
+    if (!editLabel.trim()) {
+      return;
+    }
+    setIsSaving(true);
+    try {
+      handleSaveLabel();
+      const updatedSections = sections.map(section => 
+        section.id === selectedSection.id 
+          ? { ...section, label: editLabel.trim() }
+          : section
+      );
+      setSections(updatedSections);
+      setEditDialogOpen(false);
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving section label:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDialogClose = () => {
+    if (isEditing && editLabel !== selectedSection?.label) {
+      if (window.confirm('You have unsaved changes. Are you sure you want to close?')) {
+        setEditDialogOpen(false);
+        setSelectedSection(null);
+        setEditLabel('');
+        setIsEditing(false);
+      }
+    } else {
+      setEditDialogOpen(false);
+      setSelectedSection(null);
+      setEditLabel('');
+      setIsEditing(false);
+    }
   };
 
   if (!onboardingData.address || !onboardingData.mapCenter) {
@@ -79,9 +176,9 @@ const PropertyView = () => {
             onPolygonComplete={handlePolygonComplete}
           />
         </Paper>
-        {error && (
+        {(validationError || sectionError) && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {validationError || sectionError}
           </Alert>
         )}
         <Box sx={{ mt: 3 }}>
@@ -93,7 +190,7 @@ const PropertyView = () => {
               fontWeight: 600,
             }}
           >
-            Lawn Sections
+            Lawn Sections {isEditing && <Typography component="span" color="primary">(Editing)</Typography>}
           </Typography>
           <List>
             {sections.map((section) => (
@@ -101,7 +198,7 @@ const PropertyView = () => {
                 key={section.id}
                 sx={{
                   mb: 1,
-                  backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                  backgroundColor: selectedSection?.id === section.id ? 'rgba(46, 125, 50, 0.1)' : 'rgba(0, 0, 0, 0.02)',
                   borderRadius: '8px',
                   '&:hover': {
                     backgroundColor: 'rgba(0, 0, 0, 0.04)',
@@ -112,7 +209,8 @@ const PropertyView = () => {
                     <IconButton
                       edge="end"
                       aria-label="edit"
-                      onClick={() => handleEditLabel(section.id)}
+                      onClick={() => openEditDialog(section)}
+                      disabled={isEditing && selectedSection?.id !== section.id}
                       sx={{
                         color: 'primary.main',
                         '&:hover': {
@@ -125,7 +223,13 @@ const PropertyView = () => {
                     <IconButton
                       edge="end"
                       aria-label="delete"
-                      onClick={() => handleDeleteSection(section.id)}
+                      onClick={() => {
+                        if (window.confirm('Are you sure you want to delete this section?')) {
+                          handleDeleteSection(section.id);
+                          setSections(sections.filter(s => s.id !== section.id));
+                        }
+                      }}
+                      disabled={isEditing}
                       sx={{
                         color: 'error.main',
                         '&:hover': {
@@ -140,41 +244,62 @@ const PropertyView = () => {
               >
                 <ListItemText
                   primary={section.label}
-                  secondary={`Area: ${section.area} sqft`}
+                  secondary={`Area: ${section.area.toLocaleString()} sq ft`}
                 />
               </ListItem>
             ))}
           </List>
         </Box>
-        {isEditing && (
-          <Box sx={{ mt: 2 }}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                Edit Section Label
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  value={editLabel}
-                  onChange={(e) => setEditLabel(e.target.value)}
-                  style={{ flex: 1, padding: '8px', marginRight: '8px' }}
-                  aria-label="Edit Label"
-                />
-                <Button variant="contained" color="primary" onClick={handleSaveLabel}>
-                  Save
-                </Button>
-              </Box>
-            </Paper>
-          </Box>
-        )}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
-          <Button variant="outlined" onClick={handleBack} aria-label="Back">
+        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
+          <Button variant="outlined" onClick={handleBack}>
             Back
           </Button>
-          <Button variant="contained" color="primary" onClick={handleNext} aria-label="Next">
+          <Button 
+            variant="contained" 
+            onClick={handleNext} 
+            color="primary"
+            disabled={isEditing}
+          >
             Next
           </Button>
         </Box>
+
+        {/* Edit Label Dialog */}
+        <Dialog 
+          open={editDialogOpen} 
+          onClose={handleDialogClose}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Edit Section Label</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              margin="dense"
+              label="Section Label"
+              type="text"
+              fullWidth
+              value={editLabel}
+              onChange={(e) => setEditLabel(e.target.value)}
+              variant="outlined"
+              error={editLabel.trim().length === 0}
+              helperText={editLabel.trim().length === 0 ? "Label cannot be empty" : ""}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDialogClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveNewLabel} 
+              variant="contained" 
+              color="primary"
+              disabled={isSaving || editLabel.trim().length === 0}
+            >
+              {isSaving ? <CircularProgress size={24} /> : 'Save'}
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </Container>
   );

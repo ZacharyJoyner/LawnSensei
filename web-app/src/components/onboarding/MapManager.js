@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState, useMemo } from 'react';
 import { GoogleMap, Polygon } from '@react-google-maps/api';
 import { Box, Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Typography } from '@mui/material';
 import CreateIcon from '@mui/icons-material/Create';
@@ -33,6 +33,24 @@ const MapManager = ({ initialCenter, onPolygonComplete, sections, setSections })
   const [pendingSection, setPendingSection] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [previewArea, setPreviewArea] = useState(null);
+  const [mapTypeId, setMapTypeId] = useState('satellite');
+
+  // Memoize map options to prevent unnecessary re-renders
+  const mapOptions = useMemo(() => ({
+    mapTypeId,
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+      position: window.google.maps.ControlPosition.TOP_RIGHT,
+      style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+      mapTypeIds: ['satellite', 'roadmap'],
+    },
+    fullscreenControl: false,
+    streetViewControl: false,
+    zoomControl: true,
+    scrollwheel: true,
+    rotateControl: false,
+    tilt: 0,
+  }), [mapTypeId]);
 
   const handleNewPolygon = useCallback(
     (polygon) => {
@@ -129,6 +147,11 @@ const MapManager = ({ initialCenter, onPolygonComplete, sections, setSections })
   const handleMapLoad = useCallback((map) => {
     console.log('Map loaded');
     mapRef.current = map;
+    
+    // Add listener for map type changes
+    window.google.maps.event.addListener(map, 'maptypeid_changed', () => {
+      setMapTypeId(map.getMapTypeId());
+    });
   }, []);
 
   const startDrawing = useCallback(() => {
@@ -222,21 +245,7 @@ const MapManager = ({ initialCenter, onPolygonComplete, sections, setSections })
         center={initialCenter}
         zoom={20}
         onLoad={handleMapLoad}
-        options={{
-          mapTypeId: 'satellite',
-          mapTypeControl: true,
-          mapTypeControlOptions: {
-            position: window.google.maps.ControlPosition.TOP_RIGHT,
-            style: window.google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-            mapTypeIds: ['satellite', 'roadmap'],
-          },
-          fullscreenControl: false,
-          streetViewControl: false,
-          zoomControl: true,
-          scrollwheel: true,
-          rotateControl: false,
-          tilt: 0,
-        }}
+        options={mapOptions}
       >
         {sections.map((section) => (
           <Polygon
@@ -293,4 +302,4 @@ const MapManager = ({ initialCenter, onPolygonComplete, sections, setSections })
   );
 };
 
-export default MapManager; 
+export default React.memo(MapManager); 

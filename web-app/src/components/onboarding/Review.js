@@ -1,77 +1,193 @@
-import React, { useState } from 'react';
-import { Typography, Button, Container, Box, List, ListItem, ListItemText, Paper, Alert } from '@mui/material';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Container,
+  Box,
+  Typography,
+  Button,
+  Paper,
+  Grid,
+  Card,
+  CardContent,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+} from '@mui/material';
+import {
+  LocationOn,
+  Grass,
+  CheckCircle,
+  Edit,
+  ArrowBack,
+  ArrowForward,
+} from '@mui/icons-material';
 import { useOnboarding } from '../../context/OnboardingContext';
 
-const Review = ({ handleBack }) => { // Accept handleBack as a prop
+// Future enhancements:
+// 1. Add CardActions for "Learn More" functionality in Next Steps
+// 2. Use Dividers to separate sections within Property Overview
+// 3. Add interactive elements to each next step
+// 4. Include progress indicators for setup completion
+
+const Review = () => {
+  const navigate = useNavigate();
   const { onboardingData } = useOnboarding();
-  const [submitError, setSubmitError] = useState(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  const handleSubmit = async () => {
-    setSubmitError(null);
-    try {
-      // Example API call - replace with your actual API endpoint
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/onboarding`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(onboardingData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit onboarding data.');
-      }
-
-      setSubmitSuccess(true);
-      // Optionally, navigate to the main dashboard or another page
-      // Example: navigate('/dashboard');
-    } catch (error) {
-      console.error('Error submitting onboarding data:', error);
-      setSubmitError(error.message || 'An unexpected error occurred.');
-    }
+  const handleBack = () => {
+    navigate('/onboarding/property');
   };
 
-  return (
-    <Container maxWidth="sm">
-      <Box sx={{ my: 4 }}>
-        <Paper elevation={3} sx={{ p: 2, mb: 2 }}>
-          <Typography variant="h5" gutterBottom>
-            Review Your Information
+  const handleNext = () => {
+    navigate('/onboarding/account');
+  };
+
+  const handleEditSections = () => {
+    navigate('/onboarding/sections');
+  };
+
+  // Calculate total lawn area
+  const totalArea = onboardingData.sections?.reduce((sum, section) => sum + section.area, 0) || 0;
+
+  if (!onboardingData.address || !onboardingData.sections?.length) {
+    return (
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="h5" gutterBottom color="error">
+            Please complete the previous steps first
           </Typography>
-          <List>
-            <ListItem>
-              <ListItemText primary="Address" secondary={onboardingData.address} />
-            </ListItem>
-            <ListItem>
-              <ListItemText primary="Map Center" secondary={`Lat: ${onboardingData.mapCenter.lat}, Lng: ${onboardingData.mapCenter.lng}`} />
-            </ListItem>
-            <ListItem>
-              <ListItemText primary="Lawn Sections" secondary={`${onboardingData.sections ? onboardingData.sections.length : 0}`} />
-            </ListItem>
-            {/* Add more review items as needed */}
-          </List>
+          <Button
+            variant="contained"
+            onClick={() => navigate('/onboarding')}
+            startIcon={<ArrowBack />}
+          >
+            Go Back
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
+
+  return (
+    <Container maxWidth="lg">
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', color: '#2e7d32' }}>
+          Review Your Lawn Plan
+        </Typography>
+
+        {/* Property Overview Card */}
+        <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: '#f5f5f5' }}>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <LocationOn color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Property Address</Typography>
+              </Box>
+              <Typography variant="body1" sx={{ ml: 4, mb: 2 }}>
+                {onboardingData.address}
+              </Typography>
+
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Grass color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Total Lawn Area</Typography>
+              </Box>
+              <Typography variant="body1" sx={{ ml: 4 }}>
+                {totalArea.toLocaleString()} sq ft
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <CheckCircle color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Sections Created</Typography>
+              </Box>
+              <List dense>
+                {onboardingData.sections.map((section, index) => (
+                  <ListItem key={section.id}>
+                    <ListItemIcon>
+                      <Grass color="primary" />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={section.label}
+                      secondary={`${section.area.toLocaleString()} sq ft`}
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="outlined"
+              color="primary"
+              startIcon={<Edit />}
+              onClick={handleEditSections}
+            >
+              Edit Sections
+            </Button>
+          </Box>
         </Paper>
-        {submitError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {submitError}
-          </Alert>
-        )}
-        {submitSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Onboarding completed successfully!
-          </Alert>
-        )}
-        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between' }}>
-          <Button onClick={handleBack} variant="outlined" aria-label="Back">
+
+        {/* Next Steps Card */}
+        <Card elevation={3} sx={{ mb: 4 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom color="primary">
+              Next Steps
+            </Typography>
+            <List>
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Personalized Lawn Care Plan"
+                  secondary="We'll create a customized plan based on your lawn sections"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Section-Specific Recommendations"
+                  secondary="Get tailored advice for each area of your lawn"
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <CheckCircle color="primary" />
+                </ListItemIcon>
+                <ListItemText 
+                  primary="Maintenance Schedule"
+                  secondary="Access your personalized lawn care calendar"
+                />
+              </ListItem>
+            </List>
+          </CardContent>
+        </Card>
+
+        {/* Navigation Buttons */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
+          <Button
+            variant="outlined"
+            onClick={handleBack}
+            startIcon={<ArrowBack />}
+          >
             Back
           </Button>
           <Button
             variant="contained"
-            color="primary"
-            onClick={handleSubmit}
-            disabled={submitSuccess}
-            aria-label="Finish"
+            onClick={handleNext}
+            endIcon={<ArrowForward />}
+            sx={{
+              bgcolor: '#2e7d32',
+              '&:hover': {
+                bgcolor: '#1b5e20',
+              },
+            }}
           >
-            Finish
+            Complete Setup
           </Button>
         </Box>
       </Box>
