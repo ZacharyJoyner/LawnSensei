@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -12,6 +12,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { auth } from '../../firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import useOnboardingProgress from '../../hooks/useOnboardingProgress';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +22,21 @@ const SignIn = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { onboardingData } = useOnboarding();
+  const { onboardingData, updateOnboardingData } = useOnboarding();
+  const { clearProgress } = useOnboardingProgress();
+
+  // Check for saved progress on component mount
+  useEffect(() => {
+    const savedProgress = localStorage.getItem('lawn_sensei_onboarding_progress');
+    if (savedProgress) {
+      try {
+        const parsedProgress = JSON.parse(savedProgress);
+        updateOnboardingData(parsedProgress);
+      } catch (error) {
+        console.error('Error loading saved progress:', error);
+      }
+    }
+  }, [updateOnboardingData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -57,22 +72,28 @@ const SignIn = () => {
       const user = userCredential.user;
 
       // Store user info in localStorage
-      localStorage.setItem('user', JSON.stringify({
+      const userData = {
         email: user.email,
         displayName: user.displayName,
         uid: user.uid,
-      }));
+      };
+      localStorage.setItem('user', JSON.stringify(userData));
 
-      // If we have onboarding data, save it
-      if (onboardingData.address) {
-        // Here you would typically send the onboarding data to your backend
-        console.log('Saving onboarding data:', onboardingData);
-      }
+      // Update onboarding data with user information
+      updateOnboardingData({
+        user: userData,
+      });
 
-      // Redirect to appropriate page
-      if (onboardingData.address) {
+      // Determine where to navigate based on onboarding progress
+      if (onboardingData.sections?.length > 0 && onboardingData.address) {
+        // User has completed onboarding, navigate to dashboard
         navigate('/dashboard');
+      } else if (onboardingData.address) {
+        // User has started but not completed onboarding
+        navigate('/onboarding/property');
       } else {
+        // User hasn't started onboarding
+        clearProgress(); // Clear any partial progress
         navigate('/onboarding');
       }
     } catch (err) {
