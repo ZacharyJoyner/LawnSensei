@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { Typography, Container, Box, TextField, Button, IconButton, InputAdornment, CircularProgress, Alert } from '@mui/material';
+import { Typography, Container, Box, TextField, Button, IconButton, InputAdornment, Alert } from '@mui/material';
 import { Autocomplete } from '@react-google-maps/api';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { useOnboarding } from '../../context/OnboardingContext';
-import { GoogleMap, Marker, useLoadScript } from '@react-google-maps/api';
-
-const libraries = ['places', 'geometry'];
+import { GoogleMap, Marker } from '@react-google-maps/api';
+import { useNavigate } from 'react-router-dom';
 
 // Increase map size for better visibility
 const containerStyle = {
@@ -21,12 +20,8 @@ const defaultCenter = {
   lng: -74.0060,
 };
 
-const AddressEntry = ({ handleNext }) => {
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    libraries,
-  });
-
+const AddressEntry = () => {
+  const navigate = useNavigate();
   const { onboardingData, updateOnboardingData } = useOnboarding();
   const [address, setAddress] = useState(onboardingData.address || '');
   const [mapCenter, setMapCenter] = useState(onboardingData.mapCenter || defaultCenter);
@@ -47,7 +42,7 @@ const AddressEntry = ({ handleNext }) => {
         });
         setAddress(place.formatted_address);
       } else {
-        setError(`No details available for input: &apos;${place.name}&apos;`);
+        setError(`No details available for input: '${place.name}'`);
       }
     }
   };
@@ -90,44 +85,14 @@ const AddressEntry = ({ handleNext }) => {
     }
   };
 
-  const onNext = () => {
+  const handleNext = () => {
     if (!address) {
       setError('Please enter your address to proceed.');
       return;
     }
     updateOnboardingData({ address, mapCenter });
-    handleNext();
+    navigate('/onboarding/property');
   };
-
-  if (loadError) {
-    return (
-      <Container maxWidth="lg">
-        <Alert severity="error" sx={{ mt: 4 }}>
-          Error loading Google Maps: {loadError.message}
-        </Alert>
-      </Container>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <Container maxWidth="lg">
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          height: '600px',
-          backgroundColor: 'rgba(0, 0, 0, 0.03)',
-          borderRadius: '12px',
-        }}>
-          <CircularProgress size={60} />
-          <Typography variant="h6" sx={{ ml: 2, color: 'text.secondary' }}>
-            Loading Google Maps...
-          </Typography>
-        </Box>
-      </Container>
-    );
-  }
 
   return (
     <Box
@@ -231,7 +196,7 @@ const AddressEntry = ({ handleNext }) => {
           <GoogleMap
             mapContainerStyle={containerStyle}
             center={mapCenter}
-            zoom={20} // Increased zoom level
+            zoom={20}
             mapTypeId="satellite"
             options={{
               mapTypeId: 'satellite',
@@ -247,9 +212,6 @@ const AddressEntry = ({ handleNext }) => {
               },
               streetViewControl: false,
               fullscreenControl: true,
-              fullscreenControlOptions: {
-                position: window.google.maps.ControlPosition.RIGHT_TOP,
-              },
             }}
           >
             <Marker position={mapCenter} />
@@ -261,27 +223,17 @@ const AddressEntry = ({ handleNext }) => {
           justifyContent: 'center',
           mt: 4,
         }}>
-          <Button 
-            variant="contained" 
-            color="primary" 
-            onClick={onNext}
+          <Button
+            variant="contained"
             size="large"
+            onClick={handleNext}
             sx={{
-              px: 6,
+              minWidth: '200px',
               py: 1.5,
-              fontSize: '1.2rem',
-              borderRadius: '30px',
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-              textTransform: 'none',
-              '&:hover': {
-                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.2)',
-                transform: 'translateY(-2px)',
-              },
-              transition: 'all 0.3s ease',
+              fontSize: '1.1rem',
             }}
-            aria-label="Next"
           >
-            Continue
+            Next
           </Button>
         </Box>
       </Container>
